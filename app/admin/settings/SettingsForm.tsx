@@ -1,0 +1,216 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import type { SiteSettings } from "@/lib/settings";
+
+const FONT_OPTIONS = [
+  "Inter",
+  "Cormorant Garamond",
+  "Playfair Display",
+  "Lora",
+  "Merriweather",
+  "EB Garamond",
+  "Raleway",
+  "Josefin Sans",
+];
+
+const inputClass =
+  "block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 py-2.5 text-stone-900 dark:text-stone-100 text-sm placeholder:text-stone-300 dark:placeholder:text-stone-600 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-colors";
+
+const labelClass = "block text-xs tracking-widest uppercase text-stone-400 dark:text-stone-500 mb-2";
+
+const sectionHeadingClass =
+  "text-xs tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 pb-3 mb-5";
+
+interface SettingsFormProps {
+  settings: SiteSettings;
+  action: (
+    prevState: unknown,
+    formData: FormData
+  ) => Promise<{ error?: string; success?: string }>;
+}
+
+export default function SettingsForm({ settings, action }: SettingsFormProps) {
+  const [state, formAction, pending] = useActionState(action, null);
+  const [heroImage, setHeroImage] = useState(settings.hero_image);
+  const [uploadingHero, setUploadingHero] = useState(false);
+
+  async function handleHeroImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingHero(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { alert(`Upload failed: ${data.error}`); return; }
+      if (data.url) setHeroImage(data.url);
+    } finally {
+      setUploadingHero(false);
+    }
+  }
+
+  return (
+    <form action={formAction} className="space-y-10 max-w-2xl">
+
+      {/* Identity */}
+      <section>
+        <h2 className={sectionHeadingClass}>Identity</h2>
+        <div className="space-y-5">
+          <div>
+            <label className={labelClass}>Site Name</label>
+            <input name="site_name" type="text" defaultValue={settings.site_name} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Tagline</label>
+            <input name="site_tagline" type="text" defaultValue={settings.site_tagline} className={inputClass} />
+          </div>
+        </div>
+      </section>
+
+      {/* Hero */}
+      <section>
+        <h2 className={sectionHeadingClass}>Hero Section</h2>
+        <div className="space-y-5">
+          <div>
+            <label className={labelClass}>Hero Title</label>
+            <input name="hero_title" type="text" defaultValue={settings.hero_title} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Hero Subtitle</label>
+            <textarea
+              name="hero_subtitle"
+              rows={3}
+              defaultValue={settings.hero_subtitle}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Hero Background Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleHeroImageUpload}
+              className="block w-full text-sm text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border file:border-stone-200 file:text-xs file:tracking-widest file:uppercase file:text-stone-500 file:bg-transparent hover:file:border-stone-400 file:cursor-pointer file:transition-colors"
+            />
+            {uploadingHero && (
+              <p className="mt-2 text-xs tracking-wider text-stone-400">Uploading…</p>
+            )}
+            {heroImage && (
+              <div className="mt-3 relative h-36 w-full overflow-hidden rounded-xl border border-stone-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={heroImage} alt="Hero preview" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setHeroImage("")}
+                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-black/70 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <input type="hidden" name="hero_image" value={heroImage} />
+          </div>
+        </div>
+      </section>
+
+      {/* Typography */}
+      <section>
+        <h2 className={sectionHeadingClass}>Typography</h2>
+        <div className="grid grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass}>Heading Font</label>
+            <select name="font_heading" defaultValue={settings.font_heading} className={inputClass}>
+              {FONT_OPTIONS.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Body Font</label>
+            <select name="font_body" defaultValue={settings.font_body} className={inputClass}>
+              {FONT_OPTIONS.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Appearance */}
+      <section>
+        <h2 className={sectionHeadingClass}>Appearance</h2>
+        <div>
+          <label className={labelClass}>Color Mode</label>
+          <div className="flex gap-4">
+            {(["light", "dark"] as const).map((mode) => (
+              <label key={mode} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="color_mode"
+                  value={mode}
+                  defaultChecked={settings.color_mode === mode}
+                  className="accent-[var(--color-accent)]"
+                />
+                <span className="text-sm text-stone-600 capitalize">{mode}</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-stone-400">Controls text, borders, and cards across the site. Background color is always customizable below.</p>
+        </div>
+      </section>
+
+      {/* Colors */}
+      <section>
+        <h2 className={sectionHeadingClass}>Colors</h2>
+        <div className="grid grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass}>Accent Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                name="accent_color"
+                type="color"
+                defaultValue={settings.accent_color}
+                className="h-10 w-14 rounded-lg border border-stone-200 cursor-pointer p-1"
+              />
+              <span className="text-xs text-stone-400">
+                Buttons, links, highlights
+              </span>
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Background Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                name="background_color"
+                type="color"
+                defaultValue={settings.background_color}
+                className="h-10 w-14 rounded-lg border border-stone-200 cursor-pointer p-1"
+              />
+              <span className="text-xs text-stone-400">
+                Page background
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {state?.error && (
+        <p className="text-sm text-rose-500">{state.error}</p>
+      )}
+      {state?.success && (
+        <p className="text-sm text-emerald-600">{state.success}</p>
+      )}
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-full px-8 py-2.5 text-xs tracking-widest uppercase text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+        style={{ background: "var(--color-accent)" }}
+      >
+        {pending ? "Saving…" : "Save Settings"}
+      </button>
+    </form>
+  );
+}

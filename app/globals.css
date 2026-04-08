@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* Class-based dark mode — applied when <html class="dark"> */
+@variant dark (&:is(.dark *));
+
+:root {
+  --background: #faf9f7;
+  --foreground: #1c1917;
+  --font-heading: Georgia, serif;
+  --font-body: system-ui, sans-serif;
+  --color-accent: #7c3aed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Prose styles for Markdown content */
+.prose {
+  line-height: 1.8;
+  font-size: 1.0625rem;
+  font-family: var(--font-body);
+  color: #1c1917;
+}
+.dark .prose { color: #e7e5e4; }
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-family: var(--font-heading);
+  color: #1c1917;
+}
+.dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4 { color: #f5f0eb; }
+
+.prose h1 { font-size: 2em; font-weight: 500; margin-top: 0; margin-bottom: 0.75em; }
+.prose h2 { font-size: 1.5em; font-weight: 500; margin-top: 1.75em; margin-bottom: 0.5em; }
+.prose h3 { font-size: 1.25em; font-weight: 500; margin-top: 1.5em; margin-bottom: 0.5em; }
+.prose p { margin-top: 0.75em; margin-bottom: 0.75em; }
+.prose ul, .prose ol { margin-top: 0.75em; margin-bottom: 0.75em; padding-left: 1.5em; }
+.prose ul { list-style-type: disc; }
+.prose ol { list-style-type: decimal; }
+.prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
+.prose blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1.25em;
+  margin: 1.5em 0;
+  font-style: italic;
+  font-family: var(--font-heading);
+  font-size: 1.1em;
+  color: #78716c;
+}
+.dark .prose blockquote { color: #a8a29e; }
+.prose pre {
+  background: #f5f0eb;
+  color: #1c1917;
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin: 1em 0;
+  font-size: 0.875em;
+}
+.dark .prose pre { background: #1c1917; color: #e7e5e4; }
+.prose code {
+  background: #f5f0eb;
+  padding: 0.15em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.875em;
+  color: #1c1917;
+}
+.dark .prose code { background: #292524; color: #e7e5e4; }
+.prose pre code { background: none; padding: 0; }
+.prose img { border-radius: 0.5em; margin: 1.5em 0; }
+.prose hr { border-top: 1px solid #e7e5e4; margin: 2.5em 0; }
+.dark .prose hr { border-top-color: #292524; }
+.prose table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+.prose th, .prose td { border: 1px solid #e7e5e4; padding: 0.5em 0.75em; text-align: left; }
+.dark .prose th, .dark .prose td { border-color: #292524; }
+.prose th { background: #faf9f7; font-weight: 600; }
+.dark .prose th { background: #1c1917; }
+
+/* TipTap editor content styles */
+.tiptap-content a.rich-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.tiptap-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a8a29e;
+  pointer-events: none;
+  height: 0;
+}
