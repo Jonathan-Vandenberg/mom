@@ -8,9 +8,16 @@ async function requireAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.app_metadata?.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "ADMIN") throw new Error("Unauthorized");
+
   return supabase;
 }
 

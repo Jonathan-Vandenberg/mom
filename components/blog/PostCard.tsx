@@ -27,7 +27,7 @@ export default function PostCard({
       href={`/blog/${slug}`}
       className="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-600 shadow-sm hover:shadow-md transition-all duration-300"
     >
-      <div className="relative h-52 w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
+      <div className="relative h-40 sm:h-48 md:h-52 w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
         {cover_image ? (
           <Image
             src={cover_image}
@@ -46,7 +46,7 @@ export default function PostCard({
           />
         )}
       </div>
-      <div className="flex flex-col flex-1 p-6">
+      <div className="flex flex-col flex-1 p-4 sm:p-5 md:p-6">
         <p className="text-xs tracking-widest uppercase text-stone-400 dark:text-stone-500 mb-3">
           {date}
         </p>

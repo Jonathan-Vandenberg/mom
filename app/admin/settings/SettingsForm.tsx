@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect, useCallback, useRef } from "react";
 import type { SiteSettings } from "@/lib/settings";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 const FONT_OPTIONS = [
   "Inter",
@@ -34,8 +35,52 @@ export default function SettingsForm({ settings, action }: SettingsFormProps) {
   const [state, formAction, pending] = useActionState(action, null);
   const [logoUrl, setLogoUrl] = useState(settings.logo_url);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [fontHeading, setFontHeading] = useState(settings.font_heading);
+  const [fontBody, setFontBody] = useState(settings.font_body);
   const [heroImage, setHeroImage] = useState(settings.hero_image);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const pendingNavRef = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Compare current form values to initial settings to determine if truly dirty
+  const isDirty = useCallback(() => {
+    const form = formRef.current;
+    if (!form) return false;
+    const fd = new FormData(form);
+    const keys: (keyof SiteSettings)[] = [
+      "site_name", "site_tagline", "section_title",
+      "hero_title", "hero_subtitle",
+      "font_heading", "font_body",
+      "color_mode", "accent_color", "background_color",
+    ];
+    for (const key of keys) {
+      if ((fd.get(key) as string ?? "") !== (settings[key] ?? "")) return true;
+    }
+    // Check hidden fields managed via state
+    if (logoUrl !== (settings.logo_url ?? "")) return true;
+    if (heroImage !== (settings.hero_image ?? "")) return true;
+    if (fontHeading !== settings.font_heading) return true;
+    if (fontBody !== settings.font_body) return true;
+    return false;
+  }, [settings, logoUrl, heroImage, fontHeading, fontBody]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest("a[href]") as HTMLAnchorElement | null;
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript")) return;
+      if (link.target === "_blank") return;
+      if (!isDirty()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendingNavRef.current = href;
+      setShowLeaveWarning(true);
+    };
+    document.addEventListener("click", handler, { capture: true });
+    return () => document.removeEventListener("click", handler, { capture: true });
+  }, [isDirty]);
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,7 +115,8 @@ export default function SettingsForm({ settings, action }: SettingsFormProps) {
   }
 
   return (
-    <form action={formAction} className="space-y-10 max-w-2xl">
+    <>
+    <form ref={formRef} action={formAction} className="space-y-10 max-w-2xl">
 
       {/* Identity */}
       <section>
@@ -166,53 +212,38 @@ export default function SettingsForm({ settings, action }: SettingsFormProps) {
       {/* Typography */}
       <section>
         <h2 className={sectionHeadingClass}>Typography</h2>
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>Heading Font</label>
-            <select name="font_heading" defaultValue={settings.font_heading} className={inputClass}>
+            <select name="font_heading" value={fontHeading} onChange={(e) => setFontHeading(e.target.value)} className={inputClass}>
               {FONT_OPTIONS.map((f) => (
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
+            <p className="mt-2 text-xl text-stone-900 dark:text-stone-100" style={{ fontFamily: fontHeading }}>
+              {fontHeading} looks like this
+            </p>
           </div>
           <div>
             <label className={labelClass}>Body Font</label>
-            <select name="font_body" defaultValue={settings.font_body} className={inputClass}>
+            <select name="font_body" value={fontBody} onChange={(e) => setFontBody(e.target.value)} className={inputClass}>
               {FONT_OPTIONS.map((f) => (
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
+            <p className="mt-2 text-xl text-stone-900 dark:text-stone-100" style={{ fontFamily: fontBody }}>
+              {fontBody} looks like this
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Appearance */}
-      <section>
-        <h2 className={sectionHeadingClass}>Appearance</h2>
-        <div>
-          <label className={labelClass}>Color Mode</label>
-          <div className="flex gap-4">
-            {(["light", "dark"] as const).map((mode) => (
-              <label key={mode} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="color_mode"
-                  value={mode}
-                  defaultChecked={settings.color_mode === mode}
-                  className="accent-[var(--color-accent)]"
-                />
-                <span className="text-sm text-stone-600 capitalize">{mode}</span>
-              </label>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-stone-400">Controls text, borders, and cards across the site. Background color is always customizable below.</p>
-        </div>
-      </section>
+      <input type="hidden" name="color_mode" value="light" />
 
       {/* Colors */}
       <section>
         <h2 className={sectionHeadingClass}>Colors</h2>
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>Accent Color</label>
             <div className="flex items-center gap-3">
@@ -260,5 +291,25 @@ export default function SettingsForm({ settings, action }: SettingsFormProps) {
         {pending ? "Saving…" : "Save Settings"}
       </button>
     </form>
+
+      <ConfirmModal
+        open={showLeaveWarning}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to leave? Your changes will be lost."
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        destructive
+        onConfirm={() => {
+          setShowLeaveWarning(false);
+          if (pendingNavRef.current) {
+            window.location.href = pendingNavRef.current;
+          }
+        }}
+        onCancel={() => {
+          pendingNavRef.current = null;
+          setShowLeaveWarning(false);
+        }}
+      />
+    </>
   );
 }

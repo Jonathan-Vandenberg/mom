@@ -127,7 +127,7 @@ export default async function BlogPostPage({
       <article className="flex-1">
         {/* Hero */}
         {post.cover_image ? (
-          <div className="relative h-[55vh] w-full overflow-hidden">
+          <div className="relative h-[35vh] sm:h-[45vh] md:h-[55vh] w-full overflow-hidden">
             <Image
               src={post.cover_image}
               alt={post.title}
@@ -137,12 +137,12 @@ export default async function BlogPostPage({
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
-            <div className="absolute bottom-0 left-0 right-0 px-6 py-12 text-center">
+            <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 py-6 sm:py-12 text-center">
               <p className="text-white/60 text-xs tracking-[0.3em] uppercase mb-4">
                 {post.author_name && <>{post.author_name} · </>}{date}
               </p>
               <h1
-                className="text-4xl sm:text-6xl font-light text-white max-w-4xl mx-auto leading-tight"
+                className="text-2xl sm:text-4xl md:text-6xl font-light text-white max-w-4xl mx-auto leading-tight"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {post.title}
@@ -150,18 +150,18 @@ export default async function BlogPostPage({
             </div>
           </div>
         ) : (
-          <div className="pt-16 pb-12 px-6 text-center border-b border-stone-100 dark:border-stone-800">
+          <div className="pt-10 sm:pt-16 pb-8 sm:pb-12 px-4 sm:px-6 text-center border-b border-stone-100 dark:border-stone-800">
             <p className="text-xs tracking-[0.3em] uppercase mb-4 text-stone-400 dark:text-stone-500">
               {post.author_name && <>{post.author_name} · </>}{date}
             </p>
             <h1
-              className="text-4xl sm:text-6xl font-light text-stone-900 dark:text-stone-100 max-w-4xl mx-auto leading-tight"
+              className="text-2xl sm:text-4xl md:text-6xl font-light text-stone-900 dark:text-stone-100 max-w-4xl mx-auto leading-tight"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               {post.title}
             </h1>
             {post.excerpt && (
-              <p className="mt-6 text-lg text-stone-500 dark:text-stone-400 font-light max-w-2xl mx-auto leading-relaxed">
+              <p className="mt-4 sm:mt-6 text-base sm:text-lg text-stone-500 dark:text-stone-400 font-light max-w-2xl mx-auto leading-relaxed">
                 {post.excerpt}
               </p>
             )}
@@ -169,14 +169,14 @@ export default async function BlogPostPage({
         )}
 
         {/* Content */}
-        <div className="mx-auto max-w-3xl px-6 py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <MarkdownRenderer content={post.content} />
         </div>
       </article>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 dark:border-stone-800 py-8 px-6">
-        <div className="mx-auto max-w-6xl flex items-center justify-between">
+      <footer className="border-t border-stone-200 dark:border-stone-800 py-8 px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link
             href="/blog"
             className="text-sm tracking-wider uppercase text-stone-400 dark:text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"

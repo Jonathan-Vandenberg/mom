@@ -30,7 +30,7 @@ export default async function EditPostPage({
           Edit
         </p>
         <h1
-          className="text-4xl font-light text-stone-900"
+          className="text-2xl sm:text-3xl md:text-4xl font-light text-stone-900"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           {post.title}

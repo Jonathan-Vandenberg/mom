@@ -14,9 +14,15 @@ export default async function AdminLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || user.app_metadata?.role !== "admin") {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "ADMIN") redirect("/login");
 
   const settings = await getSiteSettings();
   const initials = (user.email ?? "?")[0].toUpperCase();
@@ -26,53 +32,53 @@ export default async function AdminLayout({
     <div className="min-h-screen" style={{ background: "var(--background)" }}>
       {/* Top nav */}
       <nav className="border-b border-stone-200 dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm sticky top-0 z-30">
-        <div className="mx-auto max-w-7xl px-6 flex h-14 items-center justify-between">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 flex h-14 items-center justify-between">
           {/* Brand */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-8">
             <Link
               href="/"
-              className="flex items-center gap-2 text-base tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
+              className="flex items-center gap-2 text-sm sm:text-base tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               {settings.logo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={settings.logo_url} alt={settings.site_name} className="h-8 w-auto object-contain" />
+                <img src={settings.logo_url} alt={settings.site_name} className="h-7 sm:h-8 w-auto object-contain" />
               )}
-              {settings.site_name}
+              <span className="hidden sm:inline">{settings.site_name}</span>
             </Link>
             {/* Divider */}
-            <span className="text-stone-300 dark:text-stone-700">|</span>
-            <span className="text-xs tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500">
+            <span className="hidden sm:inline text-stone-300 dark:text-stone-700">|</span>
+            <span className="text-[10px] sm:text-xs tracking-[0.2em] uppercase text-stone-400 dark:text-stone-500">
               Admin
             </span>
           </div>
 
           {/* Nav links */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
             <Link
               href="/admin"
-              className="text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+              className="text-[10px] sm:text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
             >
               Posts
             </Link>
             <Link
               href="/admin/posts/new"
-              className="text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+              className="hidden sm:inline text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
             >
               New Post
             </Link>
             <Link
               href="/admin/settings"
-              className="text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+              className="text-[10px] sm:text-xs tracking-widest uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
             >
               Settings
             </Link>
             <Link
               href="/"
-              className="text-xs tracking-widest uppercase transition-colors"
+              className="text-[10px] sm:text-xs tracking-widest uppercase transition-colors"
               style={{ color: "var(--color-accent)" }}
             >
-              View Site →
+              Site →
             </Link>
 
             {/* Avatar */}
@@ -104,7 +110,7 @@ export default async function AdminLayout({
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10">
         {children}
       </main>
     </div>

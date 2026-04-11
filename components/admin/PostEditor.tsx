@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import ConfirmModal from "./ConfirmModal";
 
 const RichEditor = dynamic(() => import("./RichEditor"), { ssr: false });
 const AIArticleWriter = dynamic(() => import("./AIArticleWriter"), { ssr: false });
@@ -30,6 +31,43 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverImage, setCoverImage] = useState(initialData?.cover_image ?? "");
   const [uploading, setUploading] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const pendingNavRef = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Compare current form values to initial data
+  const isDirty = useCallback(() => {
+    const form = formRef.current;
+    if (!form) return false;
+    const fd = new FormData(form);
+    const init = initialData ?? { title: "", excerpt: "", author_name: "", meta_description: "", meta_keywords: "", content: "", cover_image: "" };
+    if ((fd.get("title") as string ?? "") !== init.title) return true;
+    if ((fd.get("excerpt") as string ?? "") !== init.excerpt) return true;
+    if ((fd.get("author_name") as string ?? "") !== init.author_name) return true;
+    if ((fd.get("meta_description") as string ?? "") !== init.meta_description) return true;
+    if ((fd.get("meta_keywords") as string ?? "") !== init.meta_keywords) return true;
+    if (content !== init.content) return true;
+    if (coverImage !== init.cover_image) return true;
+    return false;
+  }, [initialData, content, coverImage]);
+
+  // Intercept link clicks to show modal instead of navigating away
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest("a[href]") as HTMLAnchorElement | null;
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript")) return;
+      if (link.target === "_blank") return;
+      if (!isDirty()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendingNavRef.current = href;
+      setShowLeaveWarning(true);
+    };
+    document.addEventListener("click", handler, { capture: true });
+    return () => document.removeEventListener("click", handler, { capture: true });
+  }, [isDirty]);
 
   async function handleCoverImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -51,7 +89,8 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
   }
 
   return (
-    <form action={formAction} className="space-y-7 max-w-5xl">
+    <>
+    <form ref={formRef} action={formAction} className="space-y-7 max-w-5xl">
 
       {/* Title */}
       <div>
@@ -61,7 +100,7 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
           type="text"
           required
           defaultValue={initialData?.title ?? ""}
-          className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 py-3 text-stone-900 dark:text-stone-100 text-xl font-light placeholder:text-stone-300 dark:placeholder:text-stone-600 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-colors"
+          className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 sm:px-4 py-2.5 sm:py-3 text-stone-900 dark:text-stone-100 text-base sm:text-lg md:text-xl font-light placeholder:text-stone-300 dark:placeholder:text-stone-600 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-colors"
           style={{ fontFamily: "var(--font-heading)" }}
           placeholder="Post title"
         />
@@ -84,9 +123,9 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
         <label className={labelClass}>Excerpt</label>
         <textarea
           name="excerpt"
-          rows={2}
+          rows={4}
           defaultValue={initialData?.excerpt ?? ""}
-          className={inputClass}
+          className={`${inputClass} resize-y`}
           placeholder="A short description shown in listings"
         />
       </div>
@@ -175,7 +214,7 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
         <button
           type="submit"
           name="published"
@@ -197,5 +236,25 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
         </button>
       </div>
     </form>
+
+      <ConfirmModal
+        open={showLeaveWarning}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to leave? Your changes will be lost."
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        destructive
+        onConfirm={() => {
+          setShowLeaveWarning(false);
+          if (pendingNavRef.current) {
+            window.location.href = pendingNavRef.current;
+          }
+        }}
+        onCancel={() => {
+          pendingNavRef.current = null;
+          setShowLeaveWarning(false);
+        }}
+      />
+    </>
   );
 }

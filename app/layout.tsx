@@ -10,6 +10,15 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s — ${settings.site_name}`,
     },
     description: settings.site_tagline,
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: settings.site_name,
+    },
+    formatDetection: {
+      telephone: false,
+    },
   };
 }
 
@@ -36,6 +45,16 @@ export default async function RootLayout({
           crossOrigin="anonymous"
         />
         <link href={googleFontsUrl} rel="stylesheet" />
+
+        {/* PWA — iOS */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content={settings.site_name} />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+        {/* PWA — Android/general */}
+        <meta name="theme-color" content={settings.accent_color} />
+        <meta name="mobile-web-app-capable" content="yes" />
         <style>{`
           :root {
             --font-heading: '${settings.font_heading}', Georgia, serif;
@@ -45,7 +64,20 @@ export default async function RootLayout({
           }
         `}</style>
       </head>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }

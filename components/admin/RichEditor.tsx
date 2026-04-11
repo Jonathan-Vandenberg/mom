@@ -5,10 +5,9 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import { marked } from "marked";
 import {
   Bold, Italic, List, ListOrdered, Link2, Unlink,
-  Undo, Redo, Code2, Eye, ImagePlus, Loader2, X, Upload, Trash2,
+  Undo, Redo, Code2, ImagePlus, Loader2, X, Upload, Trash2,
 } from "lucide-react";
 
 interface RichEditorProps {
@@ -34,13 +33,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-/** Detect if plain text looks like markdown (headings, lists, bold, links, etc.) */
-function looksLikeMarkdown(text: string): boolean {
-  return /(?:^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\*\*.+\*\*|__.+__|\[.+\]\(.+\)|^>\s|^```)/m.test(text);
-}
-
 export default function RichEditor({ content, onChange }: RichEditorProps) {
-  const [showSource, setShowSource] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -79,7 +72,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-zinc max-w-none outline-none min-h-[480px]",
+        class: "prose prose-zinc max-w-none outline-none min-h-[240px] sm:min-h-[360px] md:min-h-[480px]",
       },
     },
   });
@@ -91,26 +84,6 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
       editor.commands.setContent(content);
     }
   }, [content]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Intercept paste: convert markdown → rich text
-  useEffect(() => {
-    const el = editor?.view?.dom;
-    if (!el) return;
-
-    const handlePaste = (e: Event) => {
-      const event = e as ClipboardEvent;
-      const text = event.clipboardData?.getData("text/plain") ?? "";
-      if (text && looksLikeMarkdown(text)) {
-        event.preventDefault();
-        event.stopPropagation();
-        const html = marked.parse(text, { async: false }) as string;
-        editor!.commands.insertContent(html, { parseOptions: { preserveWhitespace: false } });
-      }
-    };
-
-    el.addEventListener("paste", handlePaste, { capture: true });
-    return () => el.removeEventListener("paste", handlePaste, { capture: true });
-  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
@@ -217,7 +190,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
       type="button"
       onMouseDown={(e) => { e.preventDefault(); onMD(); }}
       title={title}
-      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+      className={`w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors ${
         active
           ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900"
           : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800"
@@ -228,7 +201,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
   );
 
   const sep = (
-    <div className="w-px h-4 bg-stone-200 dark:bg-stone-700 mx-0.5 self-center" />
+    <div className="w-px h-6 sm:h-4 bg-stone-200 dark:bg-stone-700 mx-1 sm:mx-0.5 self-center" />
   );
 
   return (
@@ -272,7 +245,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
 
       <div className="rounded-xl border border-stone-200 dark:border-stone-700">
         {/* Toolbar */}
-        <div className="sticky top-14 z-20 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 rounded-t-xl px-3 py-2 flex items-center gap-0.5 flex-wrap">
+        <div className="sticky top-14 z-20 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 rounded-t-xl px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-0.5 flex-wrap">
           {tbBtn(isActive("paragraph"), () => editor?.chain().focus().setParagraph().run(), "Paragraph", <span className="text-[10px] font-bold leading-none">P</span>)}
           {tbBtn(isActive("heading", { level: 1 }), () => editor?.chain().focus().toggleHeading({ level: 1 }).run(), "Heading 1", <span className="text-[10px] font-bold leading-none">H1</span>)}
           {tbBtn(isActive("heading", { level: 2 }), () => editor?.chain().focus().toggleHeading({ level: 2 }).run(), "Heading 2", <span className="text-[10px] font-bold leading-none">H2</span>)}
@@ -289,7 +262,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
           <div className="relative">
             {tbBtn(isActive("link"), handleToggleLink, isActive("link") ? "Remove link" : "Add link (select text first)", <Link2 size={12} />)}
             {showLinkInput && (
-              <div className="absolute top-full left-0 mt-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl p-2 flex items-center gap-1.5 z-20 shadow-xl w-60">
+              <div className="absolute top-full left-0 mt-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl p-2 flex items-center gap-1.5 z-20 shadow-xl w-48 sm:w-60">
                 <input
                   ref={linkInputRef}
                   type="text"
@@ -318,49 +291,16 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
           {tbBtn(false, () => editor?.chain().focus().undo().run(), "Undo (Ctrl+Z)", <Undo size={12} />)}
           {tbBtn(false, () => editor?.chain().focus().redo().run(), "Redo (Ctrl+Y)", <Redo size={12} />)}
 
-          <div className="ml-auto flex items-center gap-1.5">
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFile} />
-            <input ref={replaceFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReplaceWithUpload} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFile} />
+          <input ref={replaceFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReplaceWithUpload} />
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-            >
-              {uploadingImage ? <Loader2 size={12} className="animate-spin" /> : <ImagePlus size={12} />}
-              Image
-            </button>
-
-            <div className="flex bg-stone-100 dark:bg-stone-800 rounded-lg p-0.5">
-              <button
-                type="button"
-                onClick={() => setShowSource(false)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-all ${
-                  !showSource
-                    ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm"
-                    : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300"
-                }`}
-              >
-                <Eye size={11} /> Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSource(true)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-all ${
-                  showSource
-                    ? "bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 shadow-sm"
-                    : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300"
-                }`}
-              >
-                <Code2 size={11} /> HTML
-              </button>
-            </div>
-          </div>
+          {sep}
+          {tbBtn(false, () => fileInputRef.current?.click(), "Insert image", uploadingImage ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />)}
         </div>
 
         {/* Editor area */}
         <div
-          className="px-6 pb-6 bg-white dark:bg-stone-900"
+          className="px-3 sm:px-6 pb-4 sm:pb-6 bg-white dark:bg-stone-900"
           onClick={(e) => {
             const img = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
             if (img) {
@@ -369,13 +309,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
             }
           }}
         >
-          {showSource ? (
-            <pre className="text-xs text-stone-500 dark:text-stone-400 font-mono whitespace-pre-wrap leading-relaxed select-all">
-              {editor?.getHTML() ?? content}
-            </pre>
-          ) : (
-            <EditorContent editor={editor} />
-          )}
+          <EditorContent editor={editor} />
         </div>
       </div>
 

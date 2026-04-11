@@ -20,7 +20,7 @@ function LoginForm() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <h1
-            className="text-3xl font-light text-stone-900 dark:text-stone-100"
+            className="text-2xl sm:text-3xl font-light text-stone-900 dark:text-stone-100"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             Sign in

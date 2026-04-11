@@ -55,7 +55,7 @@ export default async function BlogPage() {
       </header>
 
       {/* Page header */}
-      <div className="py-20 px-6 text-center border-b border-stone-100 dark:border-stone-800">
+      <div className="py-10 sm:py-14 md:py-20 px-4 sm:px-6 text-center border-b border-stone-100 dark:border-stone-800">
         <p
           className="text-xs tracking-[0.3em] uppercase mb-4"
           style={{ color: "var(--color-accent)" }}
@@ -63,7 +63,7 @@ export default async function BlogPage() {
           {settings.site_tagline}
         </p>
         <h1
-          className="text-5xl font-light text-stone-900 dark:text-stone-100"
+          className="text-3xl sm:text-4xl md:text-5xl font-light text-stone-900 dark:text-stone-100"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           Articles
@@ -71,7 +71,7 @@ export default async function BlogPage() {
       </div>
 
       {/* Posts */}
-      <main className="flex-1 py-16 px-6">
+      <main className="flex-1 py-8 sm:py-12 md:py-16 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
           {!posts || posts.length === 0 ? (
             <p className="text-center text-stone-400 dark:text-stone-500 py-20">

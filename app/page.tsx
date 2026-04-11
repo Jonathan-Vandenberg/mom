@@ -69,7 +69,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-black/40" />
         {/* Decorative orb */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20 blur-3xl pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[450px] sm:h-[450px] md:w-[600px] md:h-[600px] rounded-full opacity-20 blur-3xl pointer-events-none"
           style={{ background: "var(--color-accent)" }}
         />
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
@@ -77,12 +77,12 @@ export default async function Home() {
             {settings.site_tagline}
           </p>
           <h1
-            className="text-5xl sm:text-7xl font-light text-white leading-tight mb-8"
+            className="text-3xl sm:text-5xl md:text-7xl font-light text-white leading-tight mb-6 sm:mb-8"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {settings.hero_title}
           </h1>
-          <p className="text-white/70 text-lg sm:text-xl font-light max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="text-white/70 text-base sm:text-lg md:text-xl font-light max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-12">
             {settings.hero_subtitle}
           </p>
           <Link
@@ -101,16 +101,16 @@ export default async function Home() {
 
       {/* Latest Articles */}
       {posts && posts.length > 0 && (
-        <section className="py-24 px-6">
+        <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6">
           <div className="mx-auto max-w-6xl">
-            <div className="flex items-end justify-between mb-14">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-14">
               <div>
                 <p className="text-xs tracking-[0.25em] uppercase mb-3"
                   style={{ color: "var(--color-accent)" }}>
                   Latest
                 </p>
                 <h2
-                  className="text-4xl font-light text-stone-900 dark:text-stone-100"
+                  className="text-2xl sm:text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
                   {settings.section_title}
@@ -134,8 +134,8 @@ export default async function Home() {
       )}
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-stone-200 dark:border-stone-800 py-10 px-6">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="mt-auto border-t border-stone-200 dark:border-stone-800 py-8 sm:py-10 px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
           <span
             className="text-lg tracking-widest uppercase font-light text-stone-600 dark:text-stone-400"
             style={{ fontFamily: "var(--font-heading)" }}
