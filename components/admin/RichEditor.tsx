@@ -5,6 +5,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import { marked } from "marked";
 import {
   Bold, Italic, List, ListOrdered, Link2, Unlink,
   Undo, Redo, Code2, Eye, ImagePlus, Loader2, X, Upload, Trash2,
@@ -33,6 +34,11 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/** Detect if plain text looks like markdown (headings, lists, bold, links, etc.) */
+function looksLikeMarkdown(text: string): boolean {
+  return /(?:^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\*\*.+\*\*|__.+__|\[.+\]\(.+\)|^>\s|^```)/m.test(text);
+}
+
 export default function RichEditor({ content, onChange }: RichEditorProps) {
   const [showSource, setShowSource] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -42,6 +48,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
   const [altText, setAltText] = useState("");
   const [imageOverlay, setImageOverlay] = useState<{ el: HTMLImageElement; rect: DOMRect } | null>(null);
   const [replacingImage, setReplacingImage] = useState(false);
+  const [, setSelectionKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const altInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +73,10 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    onSelectionUpdate: () => {
+      // Force re-render so toolbar buttons reflect the current selection
+      setSelectionKey((k) => k + 1);
+    },
     editorProps: {
       attributes: {
         class: "prose prose-zinc max-w-none outline-none min-h-[480px]",
@@ -80,6 +91,26 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
       editor.commands.setContent(content);
     }
   }, [content]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Intercept paste: convert markdown → rich text
+  useEffect(() => {
+    const el = editor?.view?.dom;
+    if (!el) return;
+
+    const handlePaste = (e: Event) => {
+      const event = e as ClipboardEvent;
+      const text = event.clipboardData?.getData("text/plain") ?? "";
+      if (text && looksLikeMarkdown(text)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const html = marked.parse(text, { async: false }) as string;
+        editor!.commands.insertContent(html, { parseOptions: { preserveWhitespace: false } });
+      }
+    };
+
+    el.addEventListener("paste", handlePaste, { capture: true });
+    return () => el.removeEventListener("paste", handlePaste, { capture: true });
+  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
@@ -239,9 +270,10 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
         </div>
       )}
 
-      <div className="rounded-xl overflow-clip border border-stone-200 dark:border-stone-700">
+      <div className="rounded-xl border border-stone-200 dark:border-stone-700">
         {/* Toolbar */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 px-3 py-2 flex items-center gap-0.5 flex-wrap">
+        <div className="sticky top-14 z-20 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 rounded-t-xl px-3 py-2 flex items-center gap-0.5 flex-wrap">
+          {tbBtn(isActive("paragraph"), () => editor?.chain().focus().setParagraph().run(), "Paragraph", <span className="text-[10px] font-bold leading-none">P</span>)}
           {tbBtn(isActive("heading", { level: 1 }), () => editor?.chain().focus().toggleHeading({ level: 1 }).run(), "Heading 1", <span className="text-[10px] font-bold leading-none">H1</span>)}
           {tbBtn(isActive("heading", { level: 2 }), () => editor?.chain().focus().toggleHeading({ level: 2 }).run(), "Heading 2", <span className="text-[10px] font-bold leading-none">H2</span>)}
           {tbBtn(isActive("heading", { level: 3 }), () => editor?.chain().focus().toggleHeading({ level: 3 }).run(), "Heading 3", <span className="text-[10px] font-bold leading-none">H3</span>)}
@@ -328,7 +360,7 @@ export default function RichEditor({ content, onChange }: RichEditorProps) {
 
         {/* Editor area */}
         <div
-          className="p-6 bg-white dark:bg-stone-900"
+          className="px-6 pb-6 bg-white dark:bg-stone-900"
           onClick={(e) => {
             const img = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
             if (img) {

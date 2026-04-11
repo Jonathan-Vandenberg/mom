@@ -32,8 +32,26 @@ interface SettingsFormProps {
 
 export default function SettingsForm({ settings, action }: SettingsFormProps) {
   const [state, formAction, pending] = useActionState(action, null);
+  const [logoUrl, setLogoUrl] = useState(settings.logo_url);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [heroImage, setHeroImage] = useState(settings.hero_image);
   const [uploadingHero, setUploadingHero] = useState(false);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { alert(`Upload failed: ${data.error}`); return; }
+      if (data.url) setLogoUrl(data.url);
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   async function handleHeroImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -65,6 +83,36 @@ export default function SettingsForm({ settings, action }: SettingsFormProps) {
           <div>
             <label className={labelClass}>Tagline</label>
             <input name="site_tagline" type="text" defaultValue={settings.site_tagline} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Articles Section Title</label>
+            <input name="section_title" type="text" defaultValue={settings.section_title} className={inputClass} placeholder="e.g. Sacred Readings, Latest Articles" />
+          </div>
+          <div>
+            <label className={labelClass}>Logo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="block w-full text-sm text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border file:border-stone-200 file:text-xs file:tracking-widest file:uppercase file:text-stone-500 file:bg-transparent hover:file:border-stone-400 file:cursor-pointer file:transition-colors"
+            />
+            {uploadingLogo && (
+              <p className="mt-2 text-xs tracking-wider text-stone-400">Uploading…</p>
+            )}
+            {logoUrl && (
+              <div className="mt-3 flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt="Logo preview" className="h-12 w-auto object-contain rounded-lg border border-stone-100 dark:border-stone-800 p-1" />
+                <button
+                  type="button"
+                  onClick={() => setLogoUrl("")}
+                  className="text-xs text-stone-400 hover:text-stone-700 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+            <input type="hidden" name="logo_url" value={logoUrl} />
           </div>
         </div>
       </section>

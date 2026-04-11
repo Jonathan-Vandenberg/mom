@@ -25,9 +25,13 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
           <Link
             href="/"
-            className="text-white text-xl tracking-widest uppercase font-light"
+            className="flex items-center gap-2 text-white text-xl tracking-widest uppercase font-light"
             style={{ fontFamily: "var(--font-heading)" }}
           >
+            {settings.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.logo_url} alt={settings.site_name} className="h-10 w-auto object-contain" />
+            )}
             {settings.site_name}
           </Link>
           <nav className="flex items-center gap-8">
@@ -109,7 +113,7 @@ export default async function Home() {
                   className="text-4xl font-light text-stone-900 dark:text-stone-100"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  Sacred Readings
+                  {settings.section_title}
                 </h2>
               </div>
               <Link

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import dynamic from "next/dynamic";
 
 const RichEditor = dynamic(() => import("./RichEditor"), { ssr: false });
+const AIArticleWriter = dynamic(() => import("./AIArticleWriter"), { ssr: false });
 
 interface PostEditorProps {
   action: (prevState: unknown, formData: FormData) => Promise<{ error?: string; success?: string } | void>;
@@ -12,6 +13,9 @@ interface PostEditorProps {
     content: string;
     excerpt: string;
     cover_image: string;
+    author_name: string;
+    meta_description: string;
+    meta_keywords: string;
   };
 }
 
@@ -63,6 +67,18 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
         />
       </div>
 
+      {/* Author */}
+      <div>
+        <label className={labelClass}>Author</label>
+        <input
+          name="author_name"
+          type="text"
+          defaultValue={initialData?.author_name ?? ""}
+          className={inputClass}
+          placeholder="Author name"
+        />
+      </div>
+
       {/* Excerpt */}
       <div>
         <label className={labelClass}>Excerpt</label>
@@ -105,12 +121,51 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
         <input type="hidden" name="cover_image" value={coverImage} />
       </div>
 
+      {/* AI Article Writer */}
+      <div>
+        <AIArticleWriter
+          onInsert={(html) => setContent((prev) => (prev ? prev + html : html))}
+        />
+      </div>
+
       {/* Content */}
       <div>
         <label className={labelClass}>Content</label>
         <RichEditor content={content} onChange={setContent} />
         <input type="hidden" name="content" value={content} />
       </div>
+
+      {/* SEO */}
+      <details className="group">
+        <summary className="cursor-pointer text-xs tracking-widest uppercase text-stone-400 dark:text-stone-500 flex items-center gap-2">
+          <span>SEO Settings</span>
+          <span className="text-[10px] text-stone-300 dark:text-stone-600 group-open:hidden">▶</span>
+          <span className="text-[10px] text-stone-300 dark:text-stone-600 hidden group-open:inline">▼</span>
+        </summary>
+        <div className="mt-4 space-y-5">
+          <div>
+            <label className={labelClass}>Meta Description</label>
+            <textarea
+              name="meta_description"
+              rows={2}
+              defaultValue={initialData?.meta_description ?? ""}
+              className={inputClass}
+              placeholder="SEO description (recommended 150-160 characters)"
+              maxLength={320}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Meta Keywords</label>
+            <input
+              name="meta_keywords"
+              type="text"
+              defaultValue={initialData?.meta_keywords ?? ""}
+              className={inputClass}
+              placeholder="Comma-separated keywords (e.g. gemstones, healing, crystals)"
+            />
+          </div>
+        </div>
+      </details>
 
       {state?.error && (
         <p className="text-sm text-rose-500">{state.error}</p>

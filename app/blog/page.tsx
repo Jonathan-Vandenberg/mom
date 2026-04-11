@@ -32,9 +32,13 @@ export default async function BlogPage() {
         <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
           <Link
             href="/"
-            className="text-xl tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
+            className="flex items-center gap-2 text-xl tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
             style={{ fontFamily: "var(--font-heading)" }}
           >
+            {settings.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.logo_url} alt={settings.site_name} className="h-10 w-auto object-contain" />
+            )}
             {settings.site_name}
           </Link>
           <nav className="flex items-center gap-6">

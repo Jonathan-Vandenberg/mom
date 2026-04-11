@@ -20,6 +20,7 @@ export async function updateSettings(prevState: unknown, formData: FormData) {
   const keys = [
     "site_name",
     "site_tagline",
+    "logo_url",
     "hero_title",
     "hero_subtitle",
     "hero_image",
@@ -28,6 +29,7 @@ export async function updateSettings(prevState: unknown, formData: FormData) {
     "font_heading",
     "font_body",
     "color_mode",
+    "section_title",
   ];
 
   const updates = keys.map((key) => ({

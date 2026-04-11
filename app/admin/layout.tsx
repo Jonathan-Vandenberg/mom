@@ -31,9 +31,13 @@ export default async function AdminLayout({
           <div className="flex items-center gap-8">
             <Link
               href="/"
-              className="text-base tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
+              className="flex items-center gap-2 text-base tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
               style={{ fontFamily: "var(--font-heading)" }}
             >
+              {settings.logo_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.logo_url} alt={settings.site_name} className="h-8 w-auto object-contain" />
+              )}
               {settings.site_name}
             </Link>
             {/* Divider */}

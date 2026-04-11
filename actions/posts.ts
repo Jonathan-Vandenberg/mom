@@ -31,6 +31,9 @@ export async function createPost(prevState: unknown, formData: FormData) {
   const content = formData.get("content") as string;
   const excerpt = formData.get("excerpt") as string;
   const cover_image = formData.get("cover_image") as string;
+  const author_name = formData.get("author_name") as string;
+  const meta_description = formData.get("meta_description") as string;
+  const meta_keywords = formData.get("meta_keywords") as string;
   const published = formData.get("published") === "true";
 
   if (!title) {
@@ -47,6 +50,9 @@ export async function createPost(prevState: unknown, formData: FormData) {
       content: content || "",
       excerpt: excerpt || "",
       cover_image: cover_image || "",
+      author_name: author_name || "",
+      meta_description: meta_description || "",
+      meta_keywords: meta_keywords || "",
       published,
       author_id: user.id,
     })
@@ -73,6 +79,9 @@ export async function updatePost(
   const content = formData.get("content") as string;
   const excerpt = formData.get("excerpt") as string;
   const cover_image = formData.get("cover_image") as string;
+  const author_name = formData.get("author_name") as string;
+  const meta_description = formData.get("meta_description") as string;
+  const meta_keywords = formData.get("meta_keywords") as string;
 
   if (!title) {
     return { error: "Title is required" };
@@ -85,6 +94,9 @@ export async function updatePost(
       content: content || "",
       excerpt: excerpt || "",
       cover_image: cover_image || "",
+      author_name: author_name || "",
+      meta_description: meta_description || "",
+      meta_keywords: meta_keywords || "",
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

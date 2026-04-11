@@ -30,19 +30,26 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data: post } = await supabase
     .from("posts")
-    .select("title, excerpt, cover_image")
+    .select("title, excerpt, cover_image, author_name, meta_description, meta_keywords")
     .eq("slug", slug)
     .eq("published", true)
     .single();
 
   if (!post) return { title: "Not Found" };
 
+  const description = post.meta_description || post.excerpt || undefined;
+  const keywords = post.meta_keywords || undefined;
+
   return {
     title: post.title,
-    description: post.excerpt || undefined,
+    description,
+    keywords,
+    authors: post.author_name ? [{ name: post.author_name }] : undefined,
     openGraph: {
       title: post.title,
-      description: post.excerpt || undefined,
+      description,
+      type: "article",
+      ...(post.author_name && { authors: [post.author_name] }),
       images: post.cover_image ? [post.cover_image] : [],
     },
   };
@@ -62,7 +69,7 @@ export default async function BlogPostPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("title, content, cover_image, created_at, excerpt")
+    .select("title, content, cover_image, created_at, excerpt, author_name")
     .eq("slug", slug)
     .eq("published", true)
     .single();
@@ -75,16 +82,36 @@ export default async function BlogPostPage({
     day: "numeric",
   });
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    ...(post.excerpt && { description: post.excerpt }),
+    ...(post.cover_image && { image: post.cover_image }),
+    datePublished: post.created_at,
+    ...(post.author_name && {
+      author: { "@type": "Person", name: post.author_name },
+    }),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Nav */}
       <header className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
           <Link
             href="/"
-            className="text-xl tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
+            className="flex items-center gap-2 text-xl tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
             style={{ fontFamily: "var(--font-heading)" }}
           >
+            {settings.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.logo_url} alt={settings.site_name} className="h-10 w-auto object-contain" />
+            )}
             {settings.site_name}
           </Link>
           <Link
@@ -112,7 +139,7 @@ export default async function BlogPostPage({
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
             <div className="absolute bottom-0 left-0 right-0 px-6 py-12 text-center">
               <p className="text-white/60 text-xs tracking-[0.3em] uppercase mb-4">
-                {date}
+                {post.author_name && <>{post.author_name} · </>}{date}
               </p>
               <h1
                 className="text-4xl sm:text-6xl font-light text-white max-w-4xl mx-auto leading-tight"
@@ -125,7 +152,7 @@ export default async function BlogPostPage({
         ) : (
           <div className="pt-16 pb-12 px-6 text-center border-b border-stone-100 dark:border-stone-800">
             <p className="text-xs tracking-[0.3em] uppercase mb-4 text-stone-400 dark:text-stone-500">
-              {date}
+              {post.author_name && <>{post.author_name} · </>}{date}
             </p>
             <h1
               className="text-4xl sm:text-6xl font-light text-stone-900 dark:text-stone-100 max-w-4xl mx-auto leading-tight"
