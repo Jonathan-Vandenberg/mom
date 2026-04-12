@@ -36,7 +36,12 @@ function isModelFree(m: OpenRouterModel): boolean {
   return pn === 0 && cn === 0;
 }
 
-const SYSTEM_PROMPT = `You are a professional article writer and editor. Help the user plan and write articles.
+function getSystemPrompt() {
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const year = new Date().getFullYear();
+  return `You are a professional article writer and editor. Help the user plan and write articles.
+
+IMPORTANT: Today's date is ${today}. The current year is ${year}. Always use this as context for current events, projections, and timelines.
 
 When the user describes what they want to write about, respond with a brief acknowledgement (1-2 sentences) followed by planning questions in this EXACT JSON format:
 
@@ -60,10 +65,10 @@ Once the plan is approved, write the full article in Markdown format:
 - Use proper Markdown formatting (## for headings, - for lists, **bold**, *italic*)
 - Write engaging, well-structured content
 - Include an introduction and conclusion
-- You can include images by using this special placeholder syntax:
+- You MUST include images by using this special placeholder syntax:
   [GENERATE_IMAGE: detailed description of the image you want]
   For example: [GENERATE_IMAGE: A close-up photograph of a purple amethyst crystal on a dark stone surface, soft lighting]
-  Include 2-4 image placeholders in longer articles. Place them between sections where a visual would enhance the reading experience.
+  Include 2-4 image placeholders in longer articles. IMPORTANT: Place each image placeholder INLINE within the article body, between relevant sections or after key paragraphs — NOT grouped at the end. Each image should visually complement the section it follows.
 - When you output the final article, wrap it in a code block with the language "article" like this:
 
 \`\`\`article
@@ -76,6 +81,7 @@ More content...
 \`\`\`
 
 This allows the user to easily insert it into the editor. Image placeholders will be replaced with AI-generated images.`;
+}
 
 /* ── Question types ────────────────────────────────────────── */
 
@@ -187,7 +193,7 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...newMessages],
+          messages: [{ role: "system", content: getSystemPrompt() }, ...newMessages],
         }),
       });
 
@@ -322,7 +328,7 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: selectedModel,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...allMessages],
+        messages: [{ role: "system", content: getSystemPrompt() }, ...allMessages],
       }),
     })
       .then(async (res) => {
@@ -385,7 +391,7 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
     return match ? match[1].trim() : null;
   };
 
-  const IMAGE_PLACEHOLDER_RE = /\[GENERATE_IMAGE:\s*(.+?)\]/g;
+  const IMAGE_PLACEHOLDER_RE = /\[(?:GENERATE_IMAGE|Image):\s*(.+?)\]/g;
 
   const countImagePlaceholders = (text: string): number => {
     return [...text.matchAll(IMAGE_PLACEHOLDER_RE)].length;
