@@ -1,4 +1,4 @@
-const CACHE_NAME = "inner-path-v1";
+const CACHE_NAME = "inner-path-v2";
 const PRECACHE_URLS = ["/", "/blog"];
 
 // Install — precache key pages
