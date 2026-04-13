@@ -9,10 +9,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export async function generateStaticParams() {
-  const supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  if (!url || !key) return [];
+
+  const supabase = createSupabaseClient(url, key);
   const { data: posts } = await supabase
     .from("posts")
     .select("slug")
