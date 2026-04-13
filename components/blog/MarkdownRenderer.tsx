@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 export default function MarkdownRenderer({ content }: { content: string }) {
   // TipTap produces HTML; legacy posts may be Markdown.
   // Detect HTML by checking for an opening tag at the start of content.
-  const isHtml = /^\s*<[a-z]/i.test(content);
+  const isHtml = /<(?:p|h[1-6]|div|ul|ol|article|section|blockquote)\b/i.test(content);
 
   if (isHtml) {
     return (

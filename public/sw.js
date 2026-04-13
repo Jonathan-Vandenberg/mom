@@ -1,4 +1,4 @@
-const CACHE_NAME = "inner-path-v2";
+const CACHE_NAME = "inner-path-v3";
 const PRECACHE_URLS = ["/", "/blog"];
 
 // Install — precache key pages
@@ -21,10 +21,14 @@ self.addEventListener("activate", (event) => {
 
 // Fetch — network first, fall back to cache
 self.addEventListener("fetch", (event) => {
-  // Skip non-GET and API/auth requests
+  // Skip non-GET, API, auth, and admin requests
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
+    url.pathname.startsWith("/admin")
+  ) return;
 
   event.respondWith(
     fetch(event.request)
