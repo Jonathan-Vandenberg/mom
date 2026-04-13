@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateAndPublishArticle } from "@/lib/generate-article";
 
-// Manual trigger endpoint — call GET /api/cron/generate-article to test
-export async function GET() {
-  console.log("[cron] Manual trigger: generating article...");
+export async function GET(request: NextRequest) {
+  // Vercel Cron sends this header automatically
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  console.log("[cron] Generating article...");
   const result = await generateAndPublishArticle();
 
   if (!result.success) {
