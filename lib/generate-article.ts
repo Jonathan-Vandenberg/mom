@@ -254,6 +254,7 @@ export async function generateAndPublishArticle(): Promise<{
   success: boolean;
   title?: string;
   slug?: string;
+  cover_image?: string | null;
   error?: string;
 }> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY;
