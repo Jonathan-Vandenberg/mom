@@ -119,7 +119,8 @@ export default async function BlogPage({
             {(() => {
               // Build segments: each segment is { size, posts[] }
               type Segment =
-                | { size: "large" | "medium"; post: typeof posts[0] }
+                | { size: "large"; post: typeof posts[0] }
+                | { size: "medium"; post: typeof posts[0] }
                 | { size: "small"; posts: typeof posts };
 
               const segments: Segment[] = [];
@@ -194,12 +195,13 @@ export default async function BlogPage({
                   );
                 }
 
-                // small group — chunk into rows of 3 (always odd)
-                const rows: typeof posts[] = [];
-                for (let r = 0; r < seg.posts.length; r += 3) {
-                  rows.push(seg.posts.slice(r, r + 3));
-                }
-                return rows.map((row, ri) => (
+                if (seg.size === "small") {
+                  // small group — chunk into rows of 3 (always odd)
+                  const rows: typeof posts[] = [];
+                  for (let r = 0; r < seg.posts.length; r += 3) {
+                    rows.push(seg.posts.slice(r, r + 3));
+                  }
+                  return rows.map((row, ri) => (
                   <div
                     key={`small-group-${si}-${ri}`}
                     className="py-5"
@@ -237,7 +239,10 @@ export default async function BlogPage({
                       ))}
                     </div>
                   </div>
-                ));
+                  ));
+                }
+
+                return null;
               });
             })()}
 
