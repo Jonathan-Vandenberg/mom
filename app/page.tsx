@@ -1,9 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSiteSettings } from "@/lib/settings";
-import PostCard from "@/components/blog/PostCard";
 import NavUser from "@/components/NavUser";
 import Link from "next/link";
 import Image from "next/image";
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatShortDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export default async function Home() {
   const [settings, supabase] = await Promise.all([
@@ -16,136 +32,261 @@ export default async function Home() {
     .select("id, title, slug, excerpt, cover_image, created_at")
     .eq("published", true)
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(10);
+
+  const lead = posts?.[0];
+  const secondary = posts?.slice(1, 3) ?? [];
+  const tertiary = posts?.slice(3, 7) ?? [];
+  const sidebar = posts?.slice(7, 10) ?? [];
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Navigation */}
-      <header className="absolute top-0 left-0 right-0 z-10">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-white text-xl tracking-widest uppercase font-light"
+    <div className="min-h-screen" style={{ color: "#3a3530" }}>
+
+      {/* ── Masthead ───────────────────────────────────────────────── */}
+      <header style={{ borderBottom: "3px double rgba(58,53,48,0.35)" }}>
+        {/* Top bar */}
+        <div
+          className="flex items-center justify-between px-6 py-1.5 text-xs"
+          style={{ borderBottom: "1px solid rgba(58,53,48,0.2)" }}
+        >
+          <span style={{ fontFamily: "var(--font-heading)" }}>{today}</span>
+          <div className="flex items-center gap-6">
+            <Link href="/blog" className="tracking-widest uppercase hover:underline">
+              All Articles
+            </Link>
+            <NavUser />
+          </div>
+        </div>
+
+        {/* Site name */}
+        <div className="text-center py-6 px-6">
+          {settings.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={settings.logo_url}
+              alt={settings.site_name}
+              className="h-16 mx-auto object-contain"
+            />
+          ) : (
+            <Link href="/">
+              <h1
+                className="text-6xl md:text-8xl font-bold uppercase tracking-tight leading-none"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                {settings.site_name}
+              </h1>
+            </Link>
+          )}
+          <p
+            className="text-xs tracking-[0.3em] uppercase mt-3"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {settings.logo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.logo_url} alt={settings.site_name} className="h-10 w-auto object-contain" />
-            )}
-            {settings.site_name}
-          </Link>
-          <nav className="flex items-center gap-8">
-            <Link
-              href="/blog"
-              className="text-white/80 hover:text-white text-sm tracking-wider uppercase transition-colors"
-            >
-              Articles
-            </Link>
-            <NavUser dark />
-          </nav>
+            ✦ {settings.site_tagline} ✦
+          </p>
         </div>
+
+        {/* Section nav */}
+        <nav
+          className="flex items-center justify-center gap-8 py-2 text-xs tracking-widest uppercase"
+          style={{ borderTop: "1px solid rgba(58,53,48,0.2)", borderBottom: "1px solid rgba(58,53,48,0.2)", fontFamily: "var(--font-heading)" }}
+        >
+          <Link href="/" className="hover:underline">Home</Link>
+          <Link href="/blog" className="hover:underline">Latest</Link>
+        </nav>
       </header>
 
-      {/* Hero */}
-      <section className="relative flex items-center justify-center min-h-[92vh] overflow-hidden">
-        {settings.hero_image ? (
-          <Image
-            src={settings.hero_image}
-            alt={settings.hero_title}
-            fill
-            className="object-cover"
-            priority
-          />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, #1a0533 0%, #2d1b69 40%, #0f172a 100%)",
-            }}
-          />
+      {/* ── Front Page ────────────────────────────────────────────── */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+
+        {posts && posts.length === 0 && (
+          <p className="text-center py-24 text-stone-400 tracking-widest uppercase text-sm">
+            No articles published yet.
+          </p>
         )}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40" />
-        {/* Decorative orb */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[450px] sm:h-[450px] md:w-[600px] md:h-[600px] rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{ background: "var(--color-accent)" }}
-        />
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <p className="text-white/60 tracking-[0.3em] uppercase text-xs mb-6">
-            {settings.site_tagline}
-          </p>
-          <h1
-            className="text-3xl sm:text-5xl md:text-7xl font-light text-white leading-tight mb-6 sm:mb-8"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            {settings.hero_title}
-          </h1>
-          <p className="text-white/70 text-base sm:text-lg md:text-xl font-light max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-12">
-            {settings.hero_subtitle}
-          </p>
-          <Link
-            href="/blog"
-            className="inline-flex items-center gap-2 border border-white/40 text-white px-8 py-3 rounded-full text-sm tracking-widest uppercase hover:bg-white/10 transition-all duration-300"
-          >
-            Explore Articles
-          </Link>
-        </div>
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40">
-          <span className="text-xs tracking-widest uppercase">Scroll</span>
-          <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent" />
-        </div>
-      </section>
 
-      {/* Latest Articles */}
-      {posts && posts.length > 0 && (
-        <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-14">
-              <div>
-                <p className="text-xs tracking-[0.25em] uppercase mb-3"
-                  style={{ color: "var(--color-accent)" }}>
-                  Latest
-                </p>
-                <h2
-                  className="text-2xl sm:text-3xl md:text-4xl font-light text-stone-900 dark:text-stone-100"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  {settings.section_title}
-                </h2>
-              </div>
-              <Link
-                href="/blog"
-                className="text-sm tracking-wider uppercase border-b pb-0.5 transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
-                style={{ borderColor: "var(--color-accent)" }}
+        {lead && (
+          <>
+            {/* ── Row 1: Lead + Secondary ─────────────────────────── */}
+            <div
+              className="grid grid-cols-1 md:grid-cols-12 gap-0 mb-0"
+              style={{ borderBottom: "1px solid rgba(58,53,48,0.2)" }}
+            >
+              {/* Lead story */}
+              <div
+                className="md:col-span-7 py-6 md:pr-6"
+                style={{ borderRight: "1px solid rgba(58,53,48,0.2)" }}
               >
-                All Articles →
-              </Link>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <PostCard key={post.id} {...post} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+                {lead.cover_image && (
+                  <div className="relative w-full mb-4 overflow-hidden" style={{ height: "340px" }}>
+                    <Image
+                      src={lead.cover_image}
+                      alt={lead.title}
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
+                )}
+                <Link href={`/blog/${lead.slug}`} className="group">
+                  <h2
+                    className="text-4xl md:text-5xl font-bold leading-tight mb-3 group-hover:underline"
+                    style={{ fontFamily: "var(--font-heading)" }}
+                  >
+                    {lead.title}
+                  </h2>
+                </Link>
+                {lead.excerpt && (
+                  <p className="text-base leading-relaxed text-stone-700 mb-3 line-clamp-3">
+                    {lead.excerpt}
+                  </p>
+                )}
+                <p className="text-xs text-stone-400 uppercase tracking-widest">
+                  {formatDate(lead.created_at)}
+                </p>
+              </div>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-stone-200 dark:border-stone-800 py-8 sm:py-10 px-4 sm:px-6">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
-          <span
-            className="text-lg tracking-widest uppercase font-light text-stone-600 dark:text-stone-400"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            {settings.site_name}
-          </span>
-          <p className="text-xs text-stone-400 dark:text-stone-500 tracking-wider">
-            {settings.site_tagline}
-          </p>
-        </div>
+              {/* Secondary stories */}
+              <div className="md:col-span-5 py-6 md:pl-6 flex flex-col gap-0">
+                {secondary.map((post, i) => (
+                  <div
+                    key={post.id}
+                    className="flex-1 pb-6 flex flex-col"
+                    style={i < secondary.length - 1 ? { borderBottom: "1px solid rgba(58,53,48,0.15)", marginBottom: "1.5rem" } : {}}
+                  >
+                    {post.cover_image && (
+                      <div className="relative w-full mb-3 overflow-hidden" style={{ height: "160px" }}>
+                        <Image
+                          src={post.cover_image}
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <Link href={`/blog/${post.slug}`} className="group">
+                      <h3
+                        className="text-xl md:text-2xl font-bold leading-snug mb-2 group-hover:underline"
+                        style={{ fontFamily: "var(--font-heading)" }}
+                      >
+                        {post.title}
+                      </h3>
+                    </Link>
+                    {post.excerpt && (
+                      <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <p className="text-xs text-stone-400 uppercase tracking-widest mt-2">
+                      {formatShortDate(post.created_at)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Row 2: Tertiary columns + Sidebar ───────────────── */}
+            {(tertiary.length > 0 || sidebar.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-0 pt-6">
+
+                {/* 4-column article strip */}
+                <div className="md:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-0"
+                  style={{ borderRight: "1px solid rgba(58,53,48,0.2)" }}
+                >
+                  {tertiary.map((post, i) => (
+                    <div
+                      key={post.id}
+                      className="px-4 first:pl-0 pb-6"
+                      style={i < tertiary.length - 1 ? { borderRight: "1px solid rgba(58,53,48,0.15)" } : {}}
+                    >
+                      {post.cover_image && (
+                        <div className="relative w-full mb-3 overflow-hidden" style={{ height: "110px" }}>
+                          <Image
+                            src={post.cover_image}
+                            alt={post.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <Link href={`/blog/${post.slug}`} className="group">
+                        <h4
+                          className="text-base font-bold leading-snug mb-1.5 group-hover:underline"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          {post.title}
+                        </h4>
+                      </Link>
+                      {post.excerpt && (
+                        <p className="text-xs leading-relaxed text-stone-500 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                      )}
+                      <p className="text-xs text-stone-400 uppercase tracking-widest mt-2">
+                        {formatShortDate(post.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sidebar — popular / recent */}
+                {sidebar.length > 0 && (
+                  <div className="md:col-span-3 pl-0 md:pl-6 pt-6 md:pt-0">
+                    <h5
+                      className="text-xs font-bold uppercase tracking-widest pb-2 mb-4"
+                      style={{ borderBottom: "2px solid rgba(58,53,48,0.25)", fontFamily: "var(--font-heading)" }}
+                    >
+                      ● More Articles
+                    </h5>
+                    <div className="flex flex-col gap-4">
+                      {sidebar.map((post, i) => (
+                        <div
+                          key={post.id}
+                          className="flex gap-3 pb-4"
+                          style={i < sidebar.length - 1 ? { borderBottom: "1px solid rgba(58,53,48,0.12)" } : {}}
+                        >
+                          <span
+                            className="text-2xl font-bold text-stone-200 leading-none shrink-0"
+                            style={{ fontFamily: "var(--font-heading)" }}
+                          >
+                            {i + 1}.
+                          </span>
+                          <div>
+                            <Link href={`/blog/${post.slug}`} className="group">
+                              <p
+                                className="text-sm font-bold leading-snug group-hover:underline"
+                                style={{ fontFamily: "var(--font-heading)" }}
+                              >
+                                {post.title}
+                              </p>
+                            </Link>
+                            <p className="text-xs text-stone-400 mt-1 uppercase tracking-widest">
+                              {formatShortDate(post.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* ── Footer ───────────────────────────────────────────────── */}
+      <footer
+        className="mt-8 py-6 px-6 text-center text-xs text-stone-400 tracking-widest uppercase"
+        style={{ borderTop: "3px double rgba(58,53,48,0.35)", fontFamily: "var(--font-heading)" }}
+      >
+        {settings.site_name} &mdash; {settings.site_tagline}
       </footer>
     </div>
   );
