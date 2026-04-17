@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getSiteSettings } from "@/lib/settings";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -85,6 +86,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {children}
+        <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `
