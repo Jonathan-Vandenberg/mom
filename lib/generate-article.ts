@@ -257,6 +257,7 @@ export async function generateAndPublishArticle(): Promise<{
   slug?: string;
   cover_image?: string | null;
   error?: string;
+  factCheck?: { issuesFound: boolean; summary: string };
 }> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY;
   if (!apiKey) {
