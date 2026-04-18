@@ -89,6 +89,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           crossOrigin="anonymous"
         />
         <link href={googleFontsUrl} rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap"
+          rel="stylesheet"
+        />
 
         {/* PWA — iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

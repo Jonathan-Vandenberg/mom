@@ -32,6 +32,19 @@ async function fetchTrendingTopics(): Promise<string[]> {
   }
 }
 
+const OPENING_STYLES = [
+  "Begin the first paragraph with a striking statistic or data point that immediately establishes the scale of the issue.",
+  "Begin the first paragraph with a short, punchy declarative sentence of no more than eight words.",
+  "Begin the first paragraph with a vivid scene — a specific place, moment, or person — that draws the reader in before widening to the broader story.",
+  "Begin the first paragraph by posing a direct, provocative question to the reader.",
+  "Begin the first paragraph with a brief, attributed quote from a world leader, analyst, or official relevant to the story.",
+  "Begin the first paragraph with a historical parallel — a past event that mirrors the current situation — before pivoting to today.",
+  "Begin the first paragraph with a blunt, contrarian observation that challenges the conventional wisdom on the topic.",
+  "Begin the first paragraph with a geographic anchor — name a specific city or region and what is happening there right now.",
+  "Begin the first paragraph with the most surprising or counterintuitive fact about the story.",
+  "Begin the first paragraph with a cause-and-effect construction: what happened, and what it immediately triggered.",
+];
+
 async function callAI(
   topics: string[],
   apiKey: string,
@@ -43,6 +56,8 @@ async function callAI(
     day: "numeric",
   });
 
+  const openingStyle = OPENING_STYLES[Math.floor(Math.random() * OPENING_STYLES.length)];
+
   const prompt = `Today is ${today}. The current year is ${new Date().getFullYear()}.
 
 Here are today's trending topics from Google Trends:
@@ -51,6 +66,8 @@ ${topics.map((t, i) => `${i + 1}. ${t}`).join("\n")}
 Your task:
 1. Pick the topic most relevant to GEOPOLITICS or ECONOMICS (international relations, conflicts, sanctions, trade, financial markets, crypto, central banking, energy politics). If none are directly relevant, find a geopolitical/economic angle on the most suitable topic.
 2. Write a comprehensive, well-researched article about it.
+
+OPENING INSTRUCTION: ${openingStyle}
 
 Output your response in this EXACT format:
 
