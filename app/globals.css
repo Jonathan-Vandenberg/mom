@@ -120,6 +120,18 @@ body {
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
+/* ── Drop cap on first paragraph of articles ── */
+.prose-dropcap > p:first-of-type::first-letter {
+  float: left;
+  font-size: 4.5em;
+  line-height: 0.78;
+  padding-right: 0.08em;
+  padding-top: 0.05em;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #3a3530;
+}
+
 /* Breaking news ticker */
 .ticker-track {
   animation: ticker-scroll 50s linear infinite;

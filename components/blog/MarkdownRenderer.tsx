@@ -9,10 +9,12 @@ export default function MarkdownRenderer({ content }: { content: string }) {
   const isHtml = /<(?:p|h[1-6]|div|ul|ol|article|section|blockquote)\b/i.test(content);
 
   if (isHtml) {
+    // Strip a leading h2/h3 that just says "Introduction" (case-insensitive)
+    const cleaned = content.replace(/^\s*<h[23][^>]*>\s*Introduction\s*<\/h[23]>\s*/i, "");
     return (
       <div
-        className="prose prose-zinc max-w-none"
-        dangerouslySetInnerHTML={{ __html: content }}
+        className="prose prose-zinc max-w-none prose-dropcap"
+        dangerouslySetInnerHTML={{ __html: cleaned }}
       />
     );
   }
