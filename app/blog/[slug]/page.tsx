@@ -4,6 +4,7 @@ import { getSiteSettings } from "@/lib/settings";
 import { notFound } from "next/navigation";
 import MarkdownRenderer from "@/components/blog/MarkdownRenderer";
 import ShareButtons from "@/components/blog/ShareButtons";
+import ArticleNav from "@/components/blog/ArticleNav";
 import NavUser from "@/components/NavUser";
 import Image from "next/image";
 import Link from "next/link";
@@ -118,32 +119,11 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Nav */}
-      <header className="sticky top-0 z-20 border-b border-stone-200 dark:border-stone-800 bg-[#f5f0e8] dark:bg-stone-950">
-        <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-xl tracking-widest uppercase font-light text-stone-900 dark:text-stone-100"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            {settings.logo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.logo_url} alt={settings.site_name} className="h-10 w-auto object-contain" />
-            )}
-            {settings.site_name}
-          </Link>
-          <Link
-            href="/"
-            className="text-sm tracking-wider uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
-          >
-            ← Articles
-          </Link>
-          <NavUser />
-        </div>
-      </header>
+      {/* Nav — fixed, hides on scroll down */}
+      <ArticleNav siteName={settings.site_name} logoUrl={settings.logo_url} userSlot={<NavUser />} />
 
-      <article className="flex-1">
-        {/* Hero */}
+      <article className="flex-1 pt-[72px]">
+        {/* Hero — pt-[72px] clears the fixed nav */}
         {post.cover_image && (
           <div className="relative h-[35vh] sm:h-[45vh] md:h-[55vh] w-full overflow-hidden">
             <Image
@@ -151,7 +131,7 @@ export default async function BlogPostPage({
               alt={post.title}
               fill
               sizes="100vw"
-              className="object-cover"
+              className="object-cover object-top"
               priority
             />
           </div>

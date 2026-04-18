@@ -58,7 +58,7 @@ async function callAI(
 
   const openingStyle = OPENING_STYLES[Math.floor(Math.random() * OPENING_STYLES.length)];
 
-  const prompt = `Today is ${today}. The current year is ${new Date().getFullYear()}.
+  const prompt = `Context for your knowledge: today's date is ${today}. Use this only to ensure factual accuracy — do NOT reference the date, mention "as of", "as of today", "as of [date]", or any similar temporal qualifier anywhere in the article. Write as a timeless, authoritative piece.
 
 Here are today's trending topics from Google Trends:
 ${topics.map((t, i) => `${i + 1}. ${t}`).join("\n")}

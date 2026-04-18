@@ -147,9 +147,9 @@ export default async function Home({
                 const rest = morePosts.slice(1);
                 return (
                   <div key="more-articles" className="grid grid-cols-1 md:grid-cols-2 gap-0 py-6" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
-                    <div className="flex flex-col justify-start md:pr-8" style={{ borderRight: "1px solid rgba(58,53,48,0.15)" }}>
+                    <div className="flex flex-col md:pr-8" style={{ borderRight: "1px solid rgba(58,53,48,0.15)" }}>
                       {featured.cover_image && (
-                        <div className="relative overflow-hidden mb-3 w-full" style={{ aspectRatio: "16/9" }}>
+                        <div className="relative overflow-hidden mb-4 w-full" style={{ aspectRatio: "16/9" }}>
                           <Image src={featured.cover_image} alt={featured.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 50vw" />
                         </div>
                       )}
@@ -157,16 +157,16 @@ export default async function Home({
                         {formatShortDate(featured.created_at)}
                       </p>
                       <Link href={`/blog/${featured.slug}`} className="group">
-                        <h3 className="font-bold leading-snug mb-2 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>
+                        <h3 className="font-bold leading-snug mb-3 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>
                           {featured.title}
                         </h3>
                       </Link>
                       {featured.excerpt && (
-                        <p className="leading-relaxed opacity-70 line-clamp-3 mt-1" style={{ fontSize: "0.95rem" }}>
+                        <p className="leading-relaxed opacity-70 flex-1 mt-1" style={{ fontSize: "0.95rem" }}>
                           {featured.excerpt}
                         </p>
                       )}
-                      <Link href={`/blog/${featured.slug}`} className="mt-3 text-xs uppercase tracking-widest hover:underline" style={{ fontFamily: "var(--font-heading)", color: "var(--color-accent)" }}>
+                      <Link href={`/blog/${featured.slug}`} className="mt-4 text-xs uppercase tracking-widest hover:underline shrink-0" style={{ fontFamily: "var(--font-heading)", color: "var(--color-accent)" }}>
                         Continue Reading →
                       </Link>
                     </div>
@@ -181,7 +181,7 @@ export default async function Home({
                               <span className="text-xl font-bold text-stone-200 leading-none shrink-0 select-none" style={{ fontFamily: "var(--font-heading)" }}>{ri + 1}.</span>
                               <div>
                                 <Link href={`/blog/${post.slug}`} className="group">
-                                  <p className="text-sm font-bold leading-snug group-hover:underline" style={{ fontFamily: "var(--font-heading)" }}>{post.title}</p>
+                                  <p className="font-bold leading-snug group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>{post.title}</p>
                                 </Link>
                                 <p className="text-xs text-stone-400 mt-1 uppercase tracking-widest">{formatShortDate(post.created_at)}</p>
                               </div>
@@ -201,11 +201,11 @@ export default async function Home({
                   result.push(
                     <div key={post.id} className="grid grid-cols-1 md:grid-cols-2 gap-0 py-6" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
                       {post.cover_image && (
-                        <div className="relative overflow-hidden md:pr-6 w-full" style={{ aspectRatio: "16/9" }}>
+                        <div className="relative overflow-hidden w-full min-h-[260px] md:min-h-0 md:self-stretch">
                           <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 50vw" />
                         </div>
                       )}
-                      <div className={`flex flex-col justify-center ${post.cover_image ? "md:pl-5" : "md:col-span-2"} pt-4 md:pt-0`}>
+                      <div className={`flex flex-col justify-center ${post.cover_image ? "md:pl-8" : "md:col-span-2"} pt-4 md:pt-0`}>
                         <p className="text-sm uppercase tracking-widest opacity-50 mb-2" style={{ fontFamily: "var(--font-heading)" }}>{formatShortDate(post.created_at)}</p>
                         <Link href={`/blog/${post.slug}`} className="group">
                           <h2 className="font-bold leading-tight mb-3 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "2rem" }}>{post.title}</h2>
