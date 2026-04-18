@@ -143,9 +143,9 @@ CORRECTED_CONTENT: [Full article HTML with only the incorrect parts fixed, or NO
     }
 
     const verdictMatch = text.match(/VERDICT:\s*(\S+)/);
-    const summaryMatch = text.match(/SUMMARY:\s*(.+?)(?:\nCORRECTED_TITLE|$)/s);
-    const titleMatch = text.match(/CORRECTED_TITLE:\s*(.+?)(?:\nCORRECTED_EXCERPT|$)/s);
-    const excerptMatch = text.match(/CORRECTED_EXCERPT:\s*(.+?)(?:\nCORRECTED_CONTENT|$)/s);
+    const summaryMatch = text.match(/SUMMARY:\s*([\s\S]+?)(?:\nCORRECTED_TITLE|$)/);
+    const titleMatch = text.match(/CORRECTED_TITLE:\s*([\s\S]+?)(?:\nCORRECTED_EXCERPT|$)/);
+    const excerptMatch = text.match(/CORRECTED_EXCERPT:\s*([\s\S]+?)(?:\nCORRECTED_CONTENT|$)/);
     const contentMatch = text.match(/CORRECTED_CONTENT:\s*([\s\S]+)/);
 
     const verdict = verdictMatch?.[1]?.trim();
