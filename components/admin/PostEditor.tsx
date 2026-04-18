@@ -14,7 +14,6 @@ interface PostEditorProps {
     content: string;
     excerpt: string;
     cover_image: string;
-    author_name: string;
     meta_description: string;
     meta_keywords: string;
   };
@@ -40,10 +39,9 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
     const form = formRef.current;
     if (!form) return false;
     const fd = new FormData(form);
-    const init = initialData ?? { title: "", excerpt: "", author_name: "", meta_description: "", meta_keywords: "", content: "", cover_image: "" };
+    const init = initialData ?? { title: "", excerpt: "", meta_description: "", meta_keywords: "", content: "", cover_image: "" };
     if ((fd.get("title") as string ?? "") !== init.title) return true;
     if ((fd.get("excerpt") as string ?? "") !== init.excerpt) return true;
-    if ((fd.get("author_name") as string ?? "") !== init.author_name) return true;
     if ((fd.get("meta_description") as string ?? "") !== init.meta_description) return true;
     if ((fd.get("meta_keywords") as string ?? "") !== init.meta_keywords) return true;
     if (content !== init.content) return true;
@@ -103,18 +101,6 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
           className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 sm:px-4 py-2.5 sm:py-3 text-stone-900 dark:text-stone-100 text-base sm:text-lg md:text-xl font-light placeholder:text-stone-300 dark:placeholder:text-stone-600 focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-colors"
           style={{ fontFamily: "var(--font-heading)" }}
           placeholder="Post title"
-        />
-      </div>
-
-      {/* Author */}
-      <div>
-        <label className={labelClass}>Author</label>
-        <input
-          name="author_name"
-          type="text"
-          defaultValue={initialData?.author_name ?? ""}
-          className={inputClass}
-          placeholder="Author name"
         />
       </div>
 

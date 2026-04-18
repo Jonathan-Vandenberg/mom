@@ -5,13 +5,46 @@ import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
   return {
+    metadataBase: siteUrl ? new URL(siteUrl) : undefined,
     title: {
       default: settings.site_name,
       template: `%s — ${settings.site_name}`,
     },
     description: settings.site_tagline,
+    keywords: ["geopolitics", "economics", "world affairs", "analysis", "news"],
+    authors: [{ name: "Jonathan van den Berg" }],
+    creator: "Jonathan van den Berg",
+    publisher: settings.site_name,
     manifest: "/manifest.json",
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
+    openGraph: {
+      type: "website",
+      siteName: settings.site_name,
+      title: settings.site_name,
+      description: settings.site_tagline,
+      ...(settings.logo_url && { images: [{ url: settings.logo_url }] }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: settings.site_name,
+      description: settings.site_tagline,
+      ...(settings.logo_url && { images: [settings.logo_url] }),
+    },
+    alternates: {
+      canonical: siteUrl || undefined,
+    },
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",

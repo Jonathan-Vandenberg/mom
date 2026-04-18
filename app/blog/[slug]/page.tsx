@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getSiteSettings } from "@/lib/settings";
 import { notFound } from "next/navigation";
 import MarkdownRenderer from "@/components/blog/MarkdownRenderer";
+import ShareButtons from "@/components/blog/ShareButtons";
 import NavUser from "@/components/NavUser";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,29 +29,45 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
+  const [supabase, settings] = await Promise.all([createClient(), getSiteSettings()]);
   const { data: post } = await supabase
     .from("posts")
-    .select("title, excerpt, cover_image, author_name, meta_description, meta_keywords")
+    .select("title, excerpt, cover_image, author_name, meta_description, meta_keywords, created_at")
     .eq("slug", slug)
     .eq("published", true)
     .single();
 
   if (!post) return { title: "Not Found" };
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const canonicalUrl = `${siteUrl}/blog/${slug}`;
   const description = post.meta_description || post.excerpt || undefined;
   const keywords = post.meta_keywords || undefined;
+  const author = post.author_name || "Jonathan van den Berg";
+  const images = post.cover_image
+    ? [{ url: post.cover_image, width: 1200, height: 630, alt: post.title }]
+    : [];
 
   return {
     title: post.title,
     description,
     keywords,
-    authors: post.author_name ? [{ name: post.author_name }] : undefined,
+    authors: [{ name: author }],
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title: post.title,
       description,
       type: "article",
-      ...(post.author_name && { authors: [post.author_name] }),
+      url: canonicalUrl,
+      siteName: settings.site_name,
+      authors: [author],
+      publishedTime: post.created_at,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
       images: post.cover_image ? [post.cover_image] : [],
     },
   };
@@ -102,7 +119,7 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* Nav */}
-      <header className="border-b border-stone-200 dark:border-stone-800">
+      <header className="sticky top-0 z-20 border-b border-stone-200 dark:border-stone-800 bg-[#f5f0e8] dark:bg-stone-950">
         <div className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
           <Link
             href="/"
@@ -116,7 +133,7 @@ export default async function BlogPostPage({
             {settings.site_name}
           </Link>
           <Link
-            href="/blog"
+            href="/"
             className="text-sm tracking-wider uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
           >
             ← Articles
@@ -160,6 +177,10 @@ export default async function BlogPostPage({
         {/* Content */}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <MarkdownRenderer content={post.content} />
+          <ShareButtons
+            title={post.title}
+            url={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/blog/${slug}`}
+          />
         </div>
       </article>
 
@@ -167,7 +188,7 @@ export default async function BlogPostPage({
       <footer className="border-t border-stone-200 dark:border-stone-800 py-8 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link
-            href="/blog"
+            href="/"
             className="text-sm tracking-wider uppercase text-stone-400 dark:text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
           >
             ← All Articles

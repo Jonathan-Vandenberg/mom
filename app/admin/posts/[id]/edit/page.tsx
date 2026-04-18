@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import PostEditor from "@/components/admin/PostEditor";
+import FactCheckButton from "@/components/admin/FactCheckButton";
 import { updatePost } from "@/actions/posts";
 
 export default async function EditPostPage({
@@ -13,7 +14,7 @@ export default async function EditPostPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("id, title, content, excerpt, cover_image, author_name, meta_description, meta_keywords")
+    .select("id, title, content, excerpt, cover_image, meta_description, meta_keywords")
     .eq("id", id)
     .single();
 
@@ -43,11 +44,11 @@ export default async function EditPostPage({
           content: post.content,
           excerpt: post.excerpt,
           cover_image: post.cover_image,
-          author_name: post.author_name || "",
           meta_description: post.meta_description || "",
           meta_keywords: post.meta_keywords || "",
         }}
       />
+      <FactCheckButton postId={post.id} />
     </div>
   );
 }

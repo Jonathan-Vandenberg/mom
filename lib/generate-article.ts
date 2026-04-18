@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { factCheckArticle } from "@/lib/fact-check";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=US";
@@ -345,10 +346,28 @@ export async function generateAndPublishArticle(): Promise<{
 
   console.log(`[cron] Published: ${post.slug}`);
 
+  // 7. Fact-check the article and apply any corrections
+  console.log(`[cron] Running fact-check on post ${post.id}…`);
+  const factCheck = await factCheckArticle(
+    post.id,
+    article.title,
+    article.excerpt,
+    article.content,
+    supabase
+  );
+  if (factCheck.issuesFound) {
+    console.log(`[cron] Fact-check corrections applied: ${factCheck.summary}`);
+  } else if (factCheck.success) {
+    console.log(`[cron] Fact-check passed: ${factCheck.summary}`);
+  } else {
+    console.warn(`[cron] Fact-check failed: ${factCheck.error}`);
+  }
+
   return {
     success: true,
     title: article.title,
     slug: post.slug,
     cover_image: coverImage || null,
+    factCheck: { issuesFound: factCheck.issuesFound, summary: factCheck.summary },
   };
 }
