@@ -32,6 +32,19 @@ async function fetchTrendingTopics(): Promise<string[]> {
   }
 }
 
+const EXCERPT_STYLES = [
+  "Start with the core tension or conflict at the heart of the story.",
+  "Start with the single most consequential fact or figure in the story.",
+  "Start with the name of a key player and what they did or said.",
+  "Start with a bold declarative statement about what this means for the world.",
+  "Start with a geographic location and the event unfolding there.",
+  "Start with a cause-and-effect: what happened and its immediate consequence.",
+  "Start with a surprising or counterintuitive angle on the story.",
+  "Start with the question that the story answers.",
+  "Start with the historical significance of what is happening.",
+  "Start with the stakes — what is at risk and for whom.",
+];
+
 const OPENING_STYLES = [
   "Begin the first paragraph with a striking statistic or data point that immediately establishes the scale of the issue.",
   "Begin the first paragraph with a short, punchy declarative sentence of no more than eight words.",
@@ -57,6 +70,7 @@ async function callAI(
   });
 
   const openingStyle = OPENING_STYLES[Math.floor(Math.random() * OPENING_STYLES.length)];
+  const excerptStyle = EXCERPT_STYLES[Math.floor(Math.random() * EXCERPT_STYLES.length)];
 
   const prompt = `Context for your knowledge: today's date is ${today}. Use this only to ensure factual accuracy — do NOT reference the date, mention "as of", "as of today", "as of [date]", or any similar temporal qualifier anywhere in the article. Write as a timeless, authoritative piece.
 
@@ -73,7 +87,7 @@ Output your response in this EXACT format:
 
 TITLE: [Article title here]
 
-EXCERPT: [A compelling 1-2 sentence summary for SEO and social sharing]
+EXCERPT: [A compelling 1-2 sentence summary for SEO and social sharing. ${excerptStyle} Do NOT start with "As", "As of", or any temporal qualifier.]
 
 ARTICLE:
 [Full article in HTML format using <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> tags.
