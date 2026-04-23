@@ -41,7 +41,7 @@ async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
     if (results.length === 0) {
       const titleRegex = /<title><!\[CDATA\[(.+?)\]\]><\/title>/g;
       const titleRegex2 = /<title>([^<]+)<\/title>/g;
-      let match;
+      let match: RegExpExecArray | null;
       while ((match = titleRegex.exec(xml)) !== null) {
         results.push({ topic: match[1], newsUrl: "" });
       }

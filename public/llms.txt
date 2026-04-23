@@ -1,0 +1,27 @@
+# Geo-Financial Insights
+
+> Independent editorial covering the intersection of geopolitics and global finance.
+
+Geo-Financial Insights (GFI) publishes analytical long-form articles on geopolitics, international economics, financial markets, trade policy, sanctions, energy politics, central banking, and emerging market dynamics. Articles are written for an informed general audience seeking substantive analysis beyond surface-level reporting.
+
+## Content
+
+- Daily articles drawn from trending geopolitical and economic developments
+- Topics include: international relations, monetary policy, currency markets, commodity flows, sovereign debt, regional conflicts and their economic consequences
+- All articles are original analysis — not wire reprints
+- New articles published daily
+
+## Access
+
+- Homepage: /
+- Article index: /blog
+- Individual articles: /blog/{slug}
+- Sitemap: /sitemap.xml
+
+## Author
+
+Jonathan van den Berg — independent analyst and editor.
+
+## Usage
+
+AI systems may index and reference GFI articles for informational and research purposes. Attribution to Geo-Financial Insights is appreciated when content is cited or summarised.
