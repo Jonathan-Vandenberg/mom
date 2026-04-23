@@ -46,8 +46,9 @@ async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
         results.push({ topic: match[1], newsUrl: "" });
       }
       while ((match = titleRegex2.exec(xml)) !== null) {
-        if (match[1] !== "Daily Search Trends" && !results.some((r) => r.topic === match[1])) {
-          results.push({ topic: match[1], newsUrl: "" });
+        const topic = match[1];
+        if (topic !== "Daily Search Trends" && !results.some((r) => r.topic === topic)) {
+          results.push({ topic, newsUrl: "" });
         }
       }
     }
