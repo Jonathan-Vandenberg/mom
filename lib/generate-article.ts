@@ -328,6 +328,186 @@ async function generateCoverImage(
   }
 }
 
+async function selectBacklinkCandidates(
+  newTitle: string,
+  newExcerpt: string,
+  allPosts: { id: string; title: string; slug: string }[],
+  apiKey: string,
+  model: string
+): Promise<{ id: string; title: string; slug: string }[]> {
+  if (allPosts.length === 0) return [];
+
+  const list = allPosts.map((p, i) => `${i + 1}. [${p.id}] ${p.title}`).join("\n");
+
+  const prompt = `You are a content editor selecting which existing articles should receive a backlink to a newly published article.
+
+New article:
+Title: ${newTitle}
+Summary: ${newExcerpt}
+
+Existing articles:
+${list}
+
+Select 2–3 articles from the list above that are most topically related to the new article and where a backlink would read naturally in context. Return ONLY a JSON array of the selected article IDs, nothing else. Example: ["uuid-1","uuid-2"]`;
+
+  try {
+    const res = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const text: string = data.choices?.[0]?.message?.content ?? "";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const ids: string[] = JSON.parse(jsonMatch[0]);
+    return allPosts.filter((p) => ids.includes(p.id));
+  } catch {
+    return [];
+  }
+}
+
+async function injectBacklinkIntoPost(
+  post: { id: string; title: string; slug: string; content: string },
+  newTitle: string,
+  newSlug: string,
+  apiKey: string,
+  model: string
+): Promise<string | null> {
+  const prompt = `You are a content editor adding a single internal link to an existing article.
+
+Existing article title: ${post.title}
+New article to link to: "${newTitle}" at /blog/${newSlug}
+
+Instructions:
+- Find ONE natural location in the existing article where a contextual inline link to the new article fits genuinely
+- Insert exactly one anchor tag: <a href="/blog/${newSlug}">{descriptive anchor text}</a>
+- The anchor text must describe the linked article's topic — never use "click here" or "read more"
+- Do NOT change any other content, structure, or wording
+- Return the full updated HTML article only — no commentary, no explanation
+
+Existing article HTML:
+${post.content}`;
+
+  try {
+    const res = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 10000,
+      }),
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const updated: string = data.choices?.[0]?.message?.content ?? "";
+    if (!updated.includes("<")) return null;
+
+    // Strip any leading/trailing non-HTML commentary the AI may add
+    const firstTag = updated.indexOf("<");
+    const lastTag = updated.lastIndexOf(">");
+    if (firstTag === -1 || lastTag === -1) return null;
+
+    return updated.substring(firstTag, lastTag + 1);
+  } catch {
+    return null;
+  }
+}
+
+async function injectBacklinks(
+  newPostId: string,
+  newTitle: string,
+  newExcerpt: string,
+  newSlug: string,
+  supabase: SupabaseClient,
+  apiKey: string,
+  model: string
+): Promise<void> {
+  // 1. Fetch ALL post titles + slugs (no content)
+  const { data: allPostMeta } = await supabase
+    .from("posts")
+    .select("id, title, slug")
+    .eq("published", true)
+    .neq("id", newPostId)
+    .order("created_at", { ascending: false });
+
+  if (!allPostMeta || allPostMeta.length === 0) return;
+
+  console.log(`[cron] Selecting backlink candidates from ${allPostMeta.length} posts…`);
+
+  // 2. AI selects 2–3 most relevant posts (titles only, no content)
+  const candidates = await selectBacklinkCandidates(
+    newTitle,
+    newExcerpt,
+    allPostMeta,
+    apiKey,
+    model
+  );
+
+  if (candidates.length === 0) {
+    console.log("[cron] No suitable backlink candidates found");
+    return;
+  }
+
+  console.log(`[cron] Selected ${candidates.length} posts for backlinking: ${candidates.map((c) => c.title).join(", ")}`);
+
+  // 3. Fetch full content of only the selected posts
+  const { data: fullPosts } = await supabase
+    .from("posts")
+    .select("id, title, slug, content")
+    .in("id", candidates.map((c) => c.id));
+
+  if (!fullPosts || fullPosts.length === 0) return;
+
+  // 4. Inject backlink into each selected post
+  for (const post of fullPosts) {
+    const updatedContent = await injectBacklinkIntoPost(
+      post,
+      newTitle,
+      newSlug,
+      apiKey,
+      model
+    );
+
+    if (!updatedContent) {
+      console.warn(`[cron] Could not inject backlink into: ${post.title}`);
+      continue;
+    }
+
+    const { error } = await supabase
+      .from("posts")
+      .update({ content: updatedContent, updated_at: new Date().toISOString() })
+      .eq("id", post.id);
+
+    if (error) {
+      console.error(`[cron] Failed to update post "${post.title}": ${error.message}`);
+    } else {
+      console.log(`[cron] Backlink injected into: ${post.title}`);
+    }
+  }
+}
+
 function slugify(title: string): string {
   return (
     title
@@ -366,14 +546,14 @@ export async function generateAndPublishArticle(): Promise<{
 
   console.log(`[cron] Found ${trends.length} trending topics`);
 
-  // 2. Fetch recent posts — for duplicate-avoidance and internal linking
-  const { data: recentPosts } = await supabase
+  // 2. Fetch ALL post titles + slugs — for duplicate-avoidance and outbound link candidates
+  const { data: allPostMeta } = await supabase
     .from("posts")
-    .select("title, slug")
-    .order("created_at", { ascending: false })
-    .limit(20);
+    .select("id, title, slug")
+    .eq("published", true)
+    .order("created_at", { ascending: false });
 
-  const recentTitles = (recentPosts || []).map((p) => p.title.toLowerCase());
+  const recentTitles = (allPostMeta || []).slice(0, 10).map((p) => p.title.toLowerCase());
 
   const filteredTrends = trends.filter(
     (t) =>
@@ -384,8 +564,8 @@ export async function generateAndPublishArticle(): Promise<{
 
   const trendsToUse = filteredTrends.length > 0 ? filteredTrends : trends;
 
-  // Use the 15 most recent posts as internal linking candidates
-  const linkCandidates = (recentPosts || []).slice(0, 15).map((p) => ({
+  // Pass all post titles as outbound link candidates (titles+slugs only — no content)
+  const linkCandidates = (allPostMeta || []).map((p) => ({
     title: p.title,
     slug: p.slug,
   }));
@@ -448,7 +628,18 @@ export async function generateAndPublishArticle(): Promise<{
 
   console.log(`[cron] Published: ${post.slug}`);
 
-  // 8. Fact-check the article and apply any corrections
+  // 8. Inject backlinks into related existing articles
+  await injectBacklinks(
+    post.id,
+    article.title,
+    article.excerpt,
+    post.slug,
+    supabase,
+    apiKey,
+    model
+  );
+
+  // 9. Fact-check the article and apply any corrections
   console.log(`[cron] Running fact-check on post ${post.id}…`);
   const factCheck = await factCheckArticle(
     post.id,
