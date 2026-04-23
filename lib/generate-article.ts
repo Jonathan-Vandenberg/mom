@@ -4,28 +4,55 @@ import { factCheckArticle } from "@/lib/fact-check";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=US";
 
-async function fetchTrendingTopics(): Promise<string[]> {
+interface TrendingTopic {
+  topic: string;
+  newsUrl: string;
+}
+
+async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
   try {
     const res = await fetch(GOOGLE_TRENDS_RSS, {
       headers: { "User-Agent": "Mozilla/5.0" },
     });
     const xml = await res.text();
 
-    const titles: string[] = [];
-    const titleRegex = /<title><!\[CDATA\[(.+?)\]\]><\/title>/g;
-    let match;
-    while ((match = titleRegex.exec(xml)) !== null) {
-      titles.push(match[1]);
+    // Split into <item> blocks so we can associate each topic with its news URLs
+    const itemBlocks = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+
+    const results: TrendingTopic[] = [];
+
+    for (const block of itemBlocks) {
+      // Extract topic title (CDATA or plain)
+      let topic = "";
+      const cdataMatch = block.match(/<title><!\[CDATA\[(.+?)\]\]><\/title>/);
+      const plainMatch = block.match(/<title>([^<]+)<\/title>/);
+      if (cdataMatch) topic = cdataMatch[1];
+      else if (plainMatch && plainMatch[1] !== "Daily Search Trends") topic = plainMatch[1];
+      if (!topic) continue;
+
+      // Extract first news item URL for this topic
+      const newsUrlMatch = block.match(/<ht:news_item_url>([^<]+)<\/ht:news_item_url>/);
+      const newsUrl = newsUrlMatch ? newsUrlMatch[1].trim() : "";
+
+      results.push({ topic, newsUrl });
     }
 
-    const titleRegex2 = /<title>([^<]+)<\/title>/g;
-    while ((match = titleRegex2.exec(xml)) !== null) {
-      if (match[1] !== "Daily Search Trends" && !titles.includes(match[1])) {
-        titles.push(match[1]);
+    // Fallback: if item parsing found nothing, fall back to plain title extraction
+    if (results.length === 0) {
+      const titleRegex = /<title><!\[CDATA\[(.+?)\]\]><\/title>/g;
+      const titleRegex2 = /<title>([^<]+)<\/title>/g;
+      let match;
+      while ((match = titleRegex.exec(xml)) !== null) {
+        results.push({ topic: match[1], newsUrl: "" });
+      }
+      while ((match = titleRegex2.exec(xml)) !== null) {
+        if (match[1] !== "Daily Search Trends" && !results.some((r) => r.topic === match[1])) {
+          results.push({ topic: match[1], newsUrl: "" });
+        }
       }
     }
 
-    return titles.slice(0, 20);
+    return results.slice(0, 20);
   } catch (err) {
     console.error("Failed to fetch Google Trends:", err);
     return [];
@@ -59,10 +86,11 @@ const OPENING_STYLES = [
 ];
 
 async function callAI(
-  topics: string[],
+  trends: TrendingTopic[],
+  recentPosts: { title: string; slug: string }[],
   apiKey: string,
   model: string
-): Promise<{ title: string; content: string; excerpt: string } | null> {
+): Promise<{ title: string; content: string; excerpt: string; sourceUrl: string } | null> {
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -72,25 +100,42 @@ async function callAI(
   const openingStyle = OPENING_STYLES[Math.floor(Math.random() * OPENING_STYLES.length)];
   const excerptStyle = EXCERPT_STYLES[Math.floor(Math.random() * EXCERPT_STYLES.length)];
 
+  const topicList = trends
+    .map((t, i) => `${i + 1}. ${t.topic}${t.newsUrl ? ` [source: ${t.newsUrl}]` : ""}`)
+    .join("\n");
+
+  const internalLinksSection =
+    recentPosts.length > 0
+      ? `
+INTERNAL LINKING: Where topically natural, weave in 2–3 inline anchor links to these existing articles on this site. Use exact HTML: <a href="/blog/{slug}">{descriptive anchor text}</a>. Only insert links where they genuinely add context — never force them.
+
+Existing articles:
+${recentPosts.map((p) => `- ${p.title} → /blog/${p.slug}`).join("\n")}
+`
+      : "";
+
   const prompt = `Context for your knowledge: today's date is ${today}. Use this only to ensure factual accuracy — do NOT reference the date, mention "as of", "as of today", "as of [date]", or any similar temporal qualifier anywhere in the article. Write as a timeless, authoritative piece.
 
 Here are today's trending topics from Google Trends:
-${topics.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+${topicList}
 
 Your task:
 1. Pick the topic most relevant to GEOPOLITICS or ECONOMICS (international relations, conflicts, sanctions, trade, financial markets, crypto, central banking, energy politics). If none are directly relevant, find a geopolitical/economic angle on the most suitable topic.
 2. Write a comprehensive, well-researched article about it.
+3. Note the source URL of the topic you chose (the [source: ...] value next to your chosen topic, or empty string if none).
 
 OPENING INSTRUCTION: ${openingStyle}
-
+${internalLinksSection}
 Output your response in this EXACT format:
 
 TITLE: [Article title here]
 
 EXCERPT: [A compelling 1-2 sentence summary for SEO and social sharing. ${excerptStyle} Do NOT start with "As", "As of", or any temporal qualifier.]
 
+SOURCE_URL: [The source URL from your chosen topic, or empty string if none]
+
 ARTICLE:
-[Full article in HTML format using <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> tags.
+[Full article in HTML format using <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <a> tags.
 Write 1500-2500 words.
 Include an introduction, multiple sections with subheadings, and a conclusion.
 Be analytical and authoritative in tone.
@@ -126,6 +171,7 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
 
     const titleMatch = text.match(/TITLE:\s*(.+)/);
     const excerptMatch = text.match(/EXCERPT:\s*(.+)/);
+    const sourceUrlMatch = text.match(/SOURCE_URL:\s*(.+)/);
     const articleMatch = text.match(/ARTICLE:\s*([\s\S]+)/);
 
     if (!titleMatch || !articleMatch) {
@@ -149,15 +195,25 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
       content = content.substring(0, lastClosingTag + 1);
     }
 
+    const rawSourceUrl = sourceUrlMatch ? cleanMarkdown(sourceUrlMatch[1]) : "";
+    // Validate it looks like a URL, otherwise discard
+    const sourceUrl = rawSourceUrl.startsWith("http") ? rawSourceUrl : "";
+
     return {
       title: cleanMarkdown(titleMatch[1]),
       content,
       excerpt: excerptMatch ? cleanMarkdown(excerptMatch[1]) : "",
+      sourceUrl,
     };
   } catch (err) {
     console.error("AI generation error:", err);
     return null;
   }
+}
+
+function buildSourceAttribution(sourceUrl: string): string {
+  if (!sourceUrl) return "";
+  return `<p class="source-attribution" style="margin-top:2rem;font-size:0.875rem;color:#6b7280;">Source: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer nofollow">Trending on Google News</a></p>`;
 }
 
 async function generateCoverImage(
@@ -301,43 +357,55 @@ export async function generateAndPublishArticle(): Promise<{
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
   );
 
-  // 1. Fetch trending topics
-  const topics = await fetchTrendingTopics();
-  if (topics.length === 0) {
+  // 1. Fetch trending topics (with source news URLs)
+  const trends = await fetchTrendingTopics();
+  if (trends.length === 0) {
     return { success: false, error: "No trending topics found" };
   }
 
-  console.log(`[cron] Found ${topics.length} trending topics`);
+  console.log(`[cron] Found ${trends.length} trending topics`);
 
-  // 2. Check recent articles to avoid duplicates
+  // 2. Fetch recent posts — for duplicate-avoidance and internal linking
   const { data: recentPosts } = await supabase
     .from("posts")
-    .select("title")
+    .select("title, slug")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(20);
 
   const recentTitles = (recentPosts || []).map((p) => p.title.toLowerCase());
 
-  const filteredTopics = topics.filter(
+  const filteredTrends = trends.filter(
     (t) =>
       !recentTitles.some(
-        (rt) => rt.includes(t.toLowerCase()) || t.toLowerCase().includes(rt)
+        (rt) => rt.includes(t.topic.toLowerCase()) || t.topic.toLowerCase().includes(rt)
       )
   );
 
-  const topicsToUse = filteredTopics.length > 0 ? filteredTopics : topics;
+  const trendsToUse = filteredTrends.length > 0 ? filteredTrends : trends;
 
-  // 3. Generate article
+  // Use the 15 most recent posts as internal linking candidates
+  const linkCandidates = (recentPosts || []).slice(0, 15).map((p) => ({
+    title: p.title,
+    slug: p.slug,
+  }));
+
+  // 3. Generate article (with internal linking candidates)
   const model = process.env.CRON_AI_MODEL || "x-ai/grok-4.20";
-  const article = await callAI(topicsToUse, apiKey, model);
+  const article = await callAI(trendsToUse, linkCandidates, apiKey, model);
 
   if (!article) {
     return { success: false, error: "Failed to generate article" };
   }
 
   console.log(`[cron] Generated article: ${article.title}`);
+  if (article.sourceUrl) {
+    console.log(`[cron] Source URL: ${article.sourceUrl}`);
+  }
 
-  // 4. Generate cover image
+  // 4. Append source attribution to article content
+  const contentWithAttribution = article.content + buildSourceAttribution(article.sourceUrl);
+
+  // 5. Generate cover image
   const coverImage = await generateCoverImage(
     article.title,
     article.excerpt,
@@ -345,7 +413,7 @@ export async function generateAndPublishArticle(): Promise<{
     supabase
   );
 
-  // 5. Get admin user for author_id
+  // 6. Get admin user for author_id
   const { data: adminProfile } = await supabase
     .from("user_profiles")
     .select("id")
@@ -353,13 +421,13 @@ export async function generateAndPublishArticle(): Promise<{
     .limit(1)
     .single();
 
-  // 6. Save to database — auto-publish
+  // 7. Save to database — auto-publish
   const { data: post, error } = await supabase
     .from("posts")
     .insert({
       title: article.title,
       slug: slugify(article.title),
-      content: article.content,
+      content: contentWithAttribution,
       excerpt: article.excerpt,
       cover_image: coverImage,
       author_name: "Jonathan van den Berg",
@@ -367,6 +435,7 @@ export async function generateAndPublishArticle(): Promise<{
       meta_keywords: "",
       published: true,
       author_id: adminProfile?.id || null,
+      source_url: article.sourceUrl || null,
     })
     .select("id, slug")
     .single();
@@ -378,13 +447,13 @@ export async function generateAndPublishArticle(): Promise<{
 
   console.log(`[cron] Published: ${post.slug}`);
 
-  // 7. Fact-check the article and apply any corrections
+  // 8. Fact-check the article and apply any corrections
   console.log(`[cron] Running fact-check on post ${post.id}…`);
   const factCheck = await factCheckArticle(
     post.id,
     article.title,
     article.excerpt,
-    article.content,
+    contentWithAttribution,
     supabase
   );
   if (factCheck.issuesFound) {
