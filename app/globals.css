@@ -79,6 +79,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 .dark .prose code { background: #292524; color: #e7e5e4; }
 .prose pre code { background: none; padding: 0; }
+.prose a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }
+.prose a:hover { opacity: 0.75; }
+.dark .prose a { color: #a78bfa; }
 .prose img { border-radius: 0.5em; margin: 1.5em 0; }
 .prose hr { border-top: 1px solid #e7e5e4; margin: 2.5em 0; }
 .dark .prose hr { border-top-color: #292524; }
@@ -134,7 +137,7 @@ body {
 
 /* Breaking news ticker */
 .ticker-track {
-  animation: ticker-scroll 50s linear infinite;
+  animation: ticker-scroll 20s linear infinite;
 }
 .ticker-track:hover {
   animation-play-state: paused;

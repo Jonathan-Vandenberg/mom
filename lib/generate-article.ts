@@ -435,7 +435,7 @@ ${post.content}`;
   }
 }
 
-async function injectBacklinks(
+export async function injectBacklinks(
   newPostId: string,
   newTitle: string,
   newExcerpt: string,
@@ -443,7 +443,9 @@ async function injectBacklinks(
   supabase: SupabaseClient,
   apiKey: string,
   model: string
-): Promise<void> {
+): Promise<string[]> {
+  const updatedSlugs: string[] = [];
+
   // 1. Fetch ALL post titles + slugs (no content)
   const { data: allPostMeta } = await supabase
     .from("posts")
@@ -452,7 +454,7 @@ async function injectBacklinks(
     .neq("id", newPostId)
     .order("created_at", { ascending: false });
 
-  if (!allPostMeta || allPostMeta.length === 0) return;
+  if (!allPostMeta || allPostMeta.length === 0) return updatedSlugs;
 
   console.log(`[cron] Selecting backlink candidates from ${allPostMeta.length} posts…`);
 
@@ -467,7 +469,7 @@ async function injectBacklinks(
 
   if (candidates.length === 0) {
     console.log("[cron] No suitable backlink candidates found");
-    return;
+    return updatedSlugs;
   }
 
   console.log(`[cron] Selected ${candidates.length} posts for backlinking: ${candidates.map((c) => c.title).join(", ")}`);
@@ -478,7 +480,7 @@ async function injectBacklinks(
     .select("id, title, slug, content")
     .in("id", candidates.map((c) => c.id));
 
-  if (!fullPosts || fullPosts.length === 0) return;
+  if (!fullPosts || fullPosts.length === 0) return updatedSlugs;
 
   // 4. Inject backlink into each selected post
   for (const post of fullPosts) {
@@ -504,8 +506,11 @@ async function injectBacklinks(
       console.error(`[cron] Failed to update post "${post.title}": ${error.message}`);
     } else {
       console.log(`[cron] Backlink injected into: ${post.title}`);
+      updatedSlugs.push(post.slug);
     }
   }
+
+  return updatedSlugs;
 }
 
 function slugify(title: string): string {

@@ -10,6 +10,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 
+export const revalidate = 0;
+
 export async function generateStaticParams() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -137,6 +139,8 @@ export default async function BlogPostPage({
           </div>
         )}
 
+        {/* Content */}
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
         <div className="pt-10 sm:pt-16 pb-8 sm:pb-12 px-4 sm:px-6 text-center border-b border-stone-100 dark:border-stone-800">
           <p className="text-xs tracking-[0.3em] uppercase mb-4 text-stone-400 dark:text-stone-500">
             {post.author_name && <>{post.author_name} · </>}{date}
@@ -153,9 +157,6 @@ export default async function BlogPostPage({
             </p>
           )}
         </div>
-
-        {/* Content */}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <MarkdownRenderer content={post.content} />
           <ShareButtons
             title={post.title}

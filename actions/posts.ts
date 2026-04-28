@@ -68,6 +68,26 @@ export async function createPost(prevState: unknown, formData: FormData) {
     return { error: error.message };
   }
 
+  // Fire-and-forget backlink injection for published posts
+  if (published) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    fetch(`${siteUrl}/api/admin/inject-backlinks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.CRON_SECRET
+          ? { Authorization: `Bearer ${process.env.CRON_SECRET}` }
+          : {}),
+      },
+      body: JSON.stringify({
+        postId: data.id,
+        title,
+        excerpt,
+        slug,
+      }),
+    }).catch((err) => console.error("[backlinks] inject failed:", err));
+  }
+
   revalidatePath("/blog");
   revalidatePath("/admin");
   redirect(`/admin/posts/${data.id}/edit`);

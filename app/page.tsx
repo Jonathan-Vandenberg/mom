@@ -26,15 +26,14 @@ function toRoman(n: number): string {
 
 function formatShortDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+    day: "numeric", month: "short", year: "numeric",
   });
 }
 
-const POSTS_PER_PAGE = 11;
-
-const SIZE_PATTERN = ["large", "medium", "medium", "small", "small", "small", "large", "medium", "small", "small", "small", "small"] as const;
+const POSTS_PER_PAGE = 16;
+const FONT_H = "var(--font-heading)";
+const BORDER_COLOR = "rgba(58,53,48,0.2)";
+const BORDER_HEAVY = "3px double rgba(58,53,48,0.35)";
 
 export default async function Home({
   searchParams,
@@ -44,27 +43,16 @@ export default async function Home({
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
   const from = (page - 1) * POSTS_PER_PAGE;
-  const to = from + POSTS_PER_PAGE - 1;
+  const to   = from + POSTS_PER_PAGE - 1;
 
-  const [settings, supabase] = await Promise.all([
-    getSiteSettings(),
-    createClient(),
-  ]);
+  const [settings, supabase] = await Promise.all([getSiteSettings(), createClient()]);
 
-  const [{ data: posts, count }, { data: morePosts }] = await Promise.all([
-    supabase
-      .from("posts")
-      .select("id, title, slug, excerpt, cover_image, created_at", { count: "exact" })
-      .eq("published", true)
-      .order("created_at", { ascending: false })
-      .range(from, to),
-    supabase
-      .from("posts")
-      .select("id, title, slug, excerpt, cover_image, created_at")
-      .eq("published", true)
-      .order("created_at", { ascending: false })
-      .range(to + 1, to + 6),
-  ]);
+  const { data: posts, count } = await supabase
+    .from("posts")
+    .select("id, title, slug, excerpt, cover_image, created_at", { count: "exact" })
+    .eq("published", true)
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   const totalPages = Math.ceil((count ?? 0) / POSTS_PER_PAGE);
 
@@ -72,237 +60,330 @@ export default async function Home({
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  return (
-    <div className="min-h-screen" style={{ color: "#3a3530" }}>
+  const p = posts ?? [];
 
-      {/* ── Masthead ── */}
-      <header style={{ borderBottom: "3px double rgba(58,53,48,0.35)" }}>
+  const hero       = p[0];
+  const shoulder   = p.slice(1, 3);
+  const digest     = p.slice(3, 9);
+  const midBand    = p.slice(9, 13);
+  const bottomPair = p.slice(13, 15);
+
+  const rule = { borderColor: BORDER_COLOR };
+
+  return (
+    <div className="min-h-screen" style={{ color: "#2a2520", background: "#f5f0e8" }}>
+
+      {/* ══ MASTHEAD ══ */}
+      <header>
         <div
-          className="flex items-center justify-between px-6 py-1.5 text-xs"
-          style={{ borderBottom: "1px solid rgba(58,53,48,0.2)" }}
+          className="flex items-center justify-between px-4 sm:px-5 py-1 border-b"
+          style={{ ...rule, fontSize: "0.7rem", fontFamily: FONT_H, letterSpacing: "0.08em" }}
         >
-          <span style={{ fontFamily: "var(--font-heading)" }}>{today}</span>
+          <span className="opacity-60 text-[0.65rem] sm:text-[0.7rem] truncate pr-2">{today}</span>
           <NavUser />
+          <span className="opacity-60 hidden md:block shrink-0 pl-2">Vol. {toRoman(page)} &nbsp;·&nbsp; Est. MMXXVI</span>
         </div>
 
-        <div className="text-center py-6 px-6">
+        <div className="text-center border-b px-4" style={{ ...rule, padding: "1rem 1rem 0.75rem" }}>
+          <div className="flex items-center gap-3 justify-center mb-3">
+            <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.3)" }} />
+            <span style={{ fontSize: "0.6rem", letterSpacing: "0.4em", fontFamily: FONT_H, opacity: 0.5 }}>✦ ✦ ✦</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.3)" }} />
+          </div>
+
           <Link href="/">
             <h1
-              className="text-5xl md:text-7xl font-bold uppercase tracking-tight leading-none hover:opacity-80 transition-opacity"
-              style={{ fontFamily: "var(--font-heading)" }}
+              className="hover:opacity-75 transition-opacity uppercase"
+              style={{
+                fontFamily: FONT_H,
+                fontWeight: 900,
+                fontSize: "clamp(2.2rem, 8vw, 7rem)",
+                lineHeight: 0.92,
+                letterSpacing: "-0.02em",
+              }}
             >
               {settings.site_name}
             </h1>
           </Link>
-          <p className="text-xs tracking-[0.3em] uppercase mt-3" style={{ fontFamily: "var(--font-heading)" }}>
-            ✦ {settings.site_tagline} ✦
+
+          <p className="mt-2 uppercase opacity-50" style={{ fontSize: "0.6rem", letterSpacing: "0.3em", fontFamily: FONT_H }}>
+            ✦ &thinsp; {settings.site_tagline} &thinsp; ✦
           </p>
+
+          <div className="mt-3" style={{ borderTop: BORDER_HEAVY }} />
         </div>
 
         {totalPages > 1 && (
-          <div
-            className="flex items-center justify-center py-2 text-xs tracking-widest uppercase"
-            style={{ borderTop: "1px solid rgba(58,53,48,0.2)", borderBottom: "1px solid rgba(58,53,48,0.2)", fontFamily: "var(--font-heading)" }}
-          >
-            <span>Page {page} of {totalPages}</span>
+          <div className="text-center py-1 border-b uppercase opacity-45" style={{ ...rule, fontSize: "0.65rem", letterSpacing: "0.25em", fontFamily: FONT_H }}>
+            Page {page} of {totalPages} &nbsp;·&nbsp; {count} Articles
           </div>
         )}
+
         <BreakingNewsTicker />
       </header>
 
-      {/* ── Content ── */}
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
-        {!posts || posts.length === 0 ? (
-          <p className="text-center py-24 tracking-widest uppercase text-sm opacity-40">
+      {/* ══ CONTENT ══ */}
+      <main className="px-3 sm:px-5 lg:px-6">
+        {p.length === 0 ? (
+          <p className="text-center py-24 uppercase opacity-40" style={{ fontFamily: FONT_H, fontSize: "0.75rem", letterSpacing: "0.3em" }}>
             No articles published yet.
           </p>
         ) : (
           <>
-            {/* ── Organic article grid ── */}
-            {(() => {
-              type Segment =
-                | { size: "large"; post: typeof posts[0] }
-                | { size: "medium"; post: typeof posts[0] }
-                | { size: "small"; posts: typeof posts };
+            {/* ══ ZONE 1: Hero + Shoulder + Digest ══
+                Mobile:  stack vertically
+                md:      hero | (shoulder+digest) two-col
+                lg:      hero | shoulder | digest three-col
+            */}
+            {hero && (
+              <div className="border-b" style={rule}>
+                <div className="grid grid-cols-1 lg:grid-cols-[3fr_1.4fr_1.2fr]">
 
-              const segments: Segment[] = [];
-              let i = 0;
-              while (i < posts.length) {
-                const size = SIZE_PATTERN[i % SIZE_PATTERN.length];
-                if (size === "small") {
-                  const group: typeof posts = [];
-                  while (i < posts.length && SIZE_PATTERN[i % SIZE_PATTERN.length] === "small") {
-                    group.push(posts[i]);
-                    i++;
-                  }
-                  segments.push({ size: "small", posts: group });
-                } else {
-                  segments.push({ size, post: posts[i] });
-                  i++;
-                }
-              }
-
-              const moreArticlesBlock = morePosts && morePosts.length > 0 ? (() => {
-                const featured = morePosts[0];
-                const rest = morePosts.slice(1);
-                return (
-                  <div key="more-articles" className="grid grid-cols-1 md:grid-cols-2 gap-0 py-6" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
-                    <div className="flex flex-col md:pr-8" style={{ borderRight: "1px solid rgba(58,53,48,0.15)" }}>
-                      {featured.cover_image && (
-                        <div className="relative overflow-hidden mb-4 w-full" style={{ aspectRatio: "16/9" }}>
-                          <Image src={featured.cover_image} alt={featured.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 50vw" />
-                        </div>
-                      )}
-                      <p className="text-xs uppercase tracking-widest opacity-50 mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-                        {formatShortDate(featured.created_at)}
-                      </p>
-                      <Link href={`/blog/${featured.slug}`} className="group">
-                        <h3 className="font-bold leading-snug mb-3 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>
-                          {featured.title}
-                        </h3>
-                      </Link>
-                      {featured.excerpt && (
-                        <p className="leading-relaxed opacity-70 flex-1 mt-1" style={{ fontSize: "0.95rem" }}>
-                          {featured.excerpt}
-                        </p>
-                      )}
-                      <Link href={`/blog/${featured.slug}`} className="mt-4 text-xs uppercase tracking-widest hover:underline shrink-0" style={{ fontFamily: "var(--font-heading)", color: "var(--color-accent)" }}>
-                        Continue Reading →
-                      </Link>
-                    </div>
-                    {rest.length > 0 && (
-                      <div className="md:pl-8 pt-6 md:pt-0">
-                        <h5 className="text-xs font-bold uppercase tracking-widest pb-2 mb-3" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)", fontFamily: "var(--font-heading)" }}>
-                          ● More Articles
-                        </h5>
-                        <div className="flex flex-col">
-                          {rest.map((post, ri) => (
-                            <div key={post.id} className="flex gap-3 py-3" style={ri < rest.length - 1 ? { borderBottom: "1px solid rgba(58,53,48,0.1)" } : {}}>
-                              <span className="text-xl font-bold text-stone-200 leading-none shrink-0 select-none" style={{ fontFamily: "var(--font-heading)" }}>{ri + 1}.</span>
-                              <div>
-                                <Link href={`/blog/${post.slug}`} className="group">
-                                  <p className="font-bold leading-snug group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>{post.title}</p>
-                                </Link>
-                                <p className="text-xs text-stone-400 mt-1 uppercase tracking-widest">{formatShortDate(post.created_at)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                  {/* ── HERO ── */}
+                  <div
+                    className="py-5 border-b lg:border-b-0 lg:border-r lg:pr-6"
+                    style={rule}
+                  >
+                    {hero.cover_image && (
+                      <div className="relative w-full overflow-hidden mb-4" style={{ aspectRatio: "16/9" }}>
+                        <Image
+                          src={hero.cover_image}
+                          alt={hero.title}
+                          fill
+                          className="object-cover object-top"
+                          sizes="(max-width:1024px) 100vw, 55vw"
+                          priority
+                        />
                       </div>
                     )}
+                    <p className="uppercase opacity-45 mb-2" style={{ fontSize: "0.6rem", letterSpacing: "0.35em", fontFamily: FONT_H }}>
+                      ● Top Story &nbsp;·&nbsp; {formatShortDate(hero.created_at)}
+                    </p>
+                    <Link href={`/blog/${hero.slug}`} className="group">
+                      <h2
+                        className="group-hover:underline mb-3"
+                        style={{ fontFamily: FONT_H, fontWeight: 700, fontSize: "clamp(1.8rem, 4vw, 3.5rem)", lineHeight: 1.06, letterSpacing: "-0.01em" }}
+                      >
+                        {hero.title}
+                      </h2>
+                    </Link>
+                    {hero.excerpt && (
+                      <p className="mb-4 opacity-72" style={{ fontFamily: FONT_H, fontSize: "1.05rem", lineHeight: 1.6, fontStyle: "italic" }}>
+                        {hero.excerpt}
+                      </p>
+                    )}
+                    <Link
+                      href={`/blog/${hero.slug}`}
+                      className="underline underline-offset-2"
+                      style={{ fontSize: "0.65rem", letterSpacing: "0.25em", fontFamily: FONT_H, textTransform: "uppercase", color: "var(--color-accent)" }}
+                    >
+                      Continue Reading →
+                    </Link>
                   </div>
-                );
-              })() : null;
 
-              const result: React.ReactNode[] = [];
-              segments.forEach((seg, si) => {
-                if (seg.size === "large") {
-                  const post = seg.post;
-                  result.push(
-                    <div key={post.id} className="grid grid-cols-1 md:grid-cols-2 gap-0 py-6" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
+                  {/* ── SHOULDER + DIGEST stacked on tablet, side-by-side on lg ── */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 lg:contents">
+
+                    {/* SHOULDER */}
+                    <div
+                      className="border-b md:border-b-0 md:border-r lg:border-b-0 lg:border-r lg:flex lg:flex-col"
+                      style={rule}
+                    >
+                      {shoulder.map((post, i) => (
+                        <div
+                          key={post.id}
+                          className="flex flex-col py-4 lg:px-5 lg:flex-1"
+                          style={{ borderBottom: i < shoulder.length - 1 ? `1px solid ${BORDER_COLOR}` : undefined }}
+                        >
+                          {post.cover_image && (
+                            <div className="relative w-full overflow-hidden mb-3" style={{ aspectRatio: "16/9" }}>
+                              <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 50vw, 20vw" />
+                            </div>
+                          )}
+                          <p className="uppercase opacity-40 mb-1" style={{ fontSize: "0.58rem", letterSpacing: "0.3em", fontFamily: FONT_H }}>
+                            {formatShortDate(post.created_at)}
+                          </p>
+                          <Link href={`/blog/${post.slug}`} className="group">
+                            <h3
+                              className="group-hover:underline mb-2"
+                              style={{ fontFamily: FONT_H, fontWeight: 700, fontSize: "1.2rem", lineHeight: 1.2 }}
+                            >
+                              {post.title}
+                            </h3>
+                          </Link>
+                          {post.excerpt && (
+                            <p className="opacity-65 line-clamp-3" style={{ fontSize: "0.8rem", lineHeight: 1.55 }}>
+                              {post.excerpt}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* DIGEST */}
+                    <div className="py-5 lg:pl-5 lg:pr-0">
+                      <p className="uppercase opacity-45 pb-2 mb-3 border-b" style={{ ...rule, fontSize: "0.6rem", letterSpacing: "0.3em", fontFamily: FONT_H }}>
+                        ● Recently
+                      </p>
+                      <div>
+                        {digest.map((post, i) => (
+                          <div
+                            key={post.id}
+                            className="border-b last:border-b-0"
+                            style={{ ...rule, paddingBottom: "0.75rem", marginBottom: "0.75rem" }}
+                          >
+                            <p className="uppercase opacity-35 mb-1" style={{ fontSize: "0.55rem", letterSpacing: "0.22em", fontFamily: FONT_H }}>
+                              {formatShortDate(post.created_at)}
+                            </p>
+                            <Link href={`/blog/${post.slug}`} className="group">
+                              <h4
+                                className="group-hover:underline"
+                                style={{ fontFamily: FONT_H, fontWeight: 700, fontSize: "1rem", lineHeight: 1.25 }}
+                              >
+                                {post.title}
+                              </h4>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Divider ── */}
+            {midBand.length > 0 && (
+              <div className="flex items-center py-2 border-b" style={rule}>
+                <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.15)" }} />
+                <span className="px-4 uppercase opacity-40" style={{ fontSize: "0.6rem", letterSpacing: "0.4em", fontFamily: FONT_H }}>
+                  ✦ &thinsp; More Reports &thinsp; ✦
+                </span>
+                <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.15)" }} />
+              </div>
+            )}
+
+            {/* ══ ZONE 2: Mid-band — 1 col → 2 col → 4 col ══ */}
+            {midBand.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b" style={rule}>
+                {midBand.map((post, i) => (
+                  <div
+                    key={post.id}
+                    className="flex flex-col border-b sm:border-b-0 sm:border-r last:border-r-0 py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0"
+                    style={rule}
+                  >
+                    {post.cover_image && (
+                      <div className="relative w-full overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+                        <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw" />
+                      </div>
+                    )}
+                    <p className="uppercase opacity-38 mb-1" style={{ fontSize: "0.58rem", letterSpacing: "0.28em", fontFamily: FONT_H }}>
+                      {formatShortDate(post.created_at)}
+                    </p>
+                    <Link href={`/blog/${post.slug}`} className="group">
+                      <h3
+                        className="group-hover:underline mb-2"
+                        style={{ fontFamily: FONT_H, fontWeight: 700, fontSize: "1.1rem", lineHeight: 1.2 }}
+                      >
+                        {post.title}
+                      </h3>
+                    </Link>
+                    {post.excerpt && (
+                      <p className="opacity-60 line-clamp-3" style={{ fontSize: "0.78rem", lineHeight: 1.55 }}>
+                        {post.excerpt}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Divider ── */}
+            {bottomPair.length > 0 && (
+              <div className="flex items-center py-2 border-b" style={rule}>
+                <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.15)" }} />
+                <span className="px-4 uppercase opacity-40" style={{ fontSize: "0.6rem", letterSpacing: "0.4em", fontFamily: FONT_H }}>
+                  ✦ &thinsp; Late Edition &thinsp; ✦
+                </span>
+                <div className="flex-1 h-px" style={{ background: "rgba(58,53,48,0.15)" }} />
+              </div>
+            )}
+
+            {/* ══ ZONE 3: Late Edition — 1 col → 2 col ══ */}
+            {bottomPair.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 border-b" style={rule}>
+                {bottomPair.map((post, i) => (
+                  <div
+                    key={post.id}
+                    className="border-b md:border-b-0 md:border-r last:border-r-0 py-4 md:px-4 md:first:pl-0 md:last:pr-0"
+                    style={rule}
+                  >
+                    {/* Mobile: image on top full width; md+: image left, text right */}
+                    <div className="flex flex-col md:flex-row gap-4 md:items-start">
                       {post.cover_image && (
-                        <div className="relative overflow-hidden w-full min-h-[260px] md:min-h-0 md:self-stretch">
-                          <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 50vw" />
+                        <div
+                          className="relative w-full md:w-[220px] md:shrink-0 overflow-hidden"
+                          style={{ aspectRatio: "16/9" }}
+                        >
+                          <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 220px" />
                         </div>
                       )}
-                      <div className={`flex flex-col justify-center ${post.cover_image ? "md:pl-8" : "md:col-span-2"} pt-4 md:pt-0`}>
-                        <p className="text-sm uppercase tracking-widest opacity-50 mb-2" style={{ fontFamily: "var(--font-heading)" }}>{formatShortDate(post.created_at)}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="uppercase opacity-38 mb-1" style={{ fontSize: "0.58rem", letterSpacing: "0.28em", fontFamily: FONT_H }}>
+                          {formatShortDate(post.created_at)}
+                        </p>
                         <Link href={`/blog/${post.slug}`} className="group">
-                          <h2 className="font-bold leading-tight mb-3 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "2rem" }}>{post.title}</h2>
+                          <h3
+                            className="group-hover:underline mb-2"
+                            style={{ fontFamily: FONT_H, fontWeight: 700, fontSize: "1.25rem", lineHeight: 1.2 }}
+                          >
+                            {post.title}
+                          </h3>
                         </Link>
-                        {post.excerpt && <p className="leading-relaxed opacity-75 line-clamp-4" style={{ fontSize: "1rem" }}>{post.excerpt}</p>}
-                        <Link href={`/blog/${post.slug}`} className="mt-4 text-sm uppercase tracking-widest hover:underline" style={{ fontFamily: "var(--font-heading)", color: "var(--color-accent)" }}>Continue Reading →</Link>
-                      </div>
-                    </div>
-                  );
-                } else if (seg.size === "medium") {
-                  const post = seg.post;
-                  result.push(
-                    <div key={post.id} className="py-5" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
-                      <div className="flex gap-5">
-                        {post.cover_image && (
-                          <div className="relative shrink-0 overflow-hidden" style={{ width: "160px", aspectRatio: "16/9" }}>
-                            <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="160px" />
-                          </div>
+                        {post.excerpt && (
+                          <p className="opacity-60 line-clamp-3" style={{ fontSize: "0.8rem", lineHeight: 1.55 }}>
+                            {post.excerpt}
+                          </p>
                         )}
-                        <div className="flex flex-col justify-center flex-1 min-w-0">
-                          <p className="text-sm uppercase tracking-widest opacity-50 mb-1" style={{ fontFamily: "var(--font-heading)" }}>{formatShortDate(post.created_at)}</p>
-                          <Link href={`/blog/${post.slug}`} className="group">
-                            <h3 className="font-bold leading-snug mb-2 group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>{post.title}</h3>
-                          </Link>
-                          {post.excerpt && <p className="leading-relaxed opacity-70 line-clamp-2" style={{ fontSize: "1rem" }}>{post.excerpt}</p>}
-                        </div>
                       </div>
                     </div>
-                  );
-                } else if (seg.size === "small") {
-                  const rows: typeof posts[] = [];
-                  for (let r = 0; r < seg.posts.length; r += 3) rows.push(seg.posts.slice(r, r + 3));
-                  rows.forEach((row, ri) => {
-                    result.push(
-                      <div key={`small-${si}-${ri}`} className="py-5" style={{ borderBottom: "1px solid rgba(58,53,48,0.15)" }}>
-                        <div className="grid gap-0 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-                          {row.map((post, pi) => (
-                            <div key={post.id} className="py-4 sm:py-1 sm:px-4 sm:first:pl-0" style={pi < row.length - 1 ? { borderRight: "1px solid rgba(58,53,48,0.12)" } : {}}>
-                              {post.cover_image && (
-                                <div className="relative overflow-hidden mb-2 w-full" style={{ aspectRatio: "16/9" }}>
-                                  <Image src={post.cover_image} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 33vw" />
-                                </div>
-                              )}
-                              <p className="text-sm uppercase tracking-widest opacity-40 mb-1" style={{ fontFamily: "var(--font-heading)" }}>{formatShortDate(post.created_at)}</p>
-                              <Link href={`/blog/${post.slug}`} className="group">
-                                <h4 className="font-bold leading-snug group-hover:underline" style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem" }}>{post.title}</h4>
-                              </Link>
-                              {post.excerpt && <p className="opacity-60 mt-1 line-clamp-2 leading-relaxed" style={{ fontSize: "0.95rem" }}>{post.excerpt}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  });
-                }
-                // Inject More Articles after segment index 2
-                if (si === 2 && moreArticlesBlock) result.push(moreArticlesBlock);
-              });
-
-              return result;
-            })()}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* ── Pagination ── */}
             {totalPages > 1 && (
-              <div className="mt-12" style={{ borderTop: "3px double rgba(58,53,48,0.35)" }}>
+              <div className="mt-10" style={{ borderTop: BORDER_HEAVY }}>
                 <div className="grid grid-cols-3 items-center pt-5">
-                  <div className="flex justify-start">
-                    {page > 1 ? (
+                  <div>
+                    {page > 1 && (
                       <Link
                         href={`/?page=${page - 1}`}
-                        className="flex flex-col items-start gap-1 hover:opacity-70 transition-opacity"
-                        style={{ fontFamily: "var(--font-heading)" }}
+                        className="flex flex-col gap-1 opacity-70 hover:opacity-100 transition-opacity"
+                        style={{ fontFamily: FONT_H }}
                       >
-                        <span className="text-lg leading-none">←</span>
-                        <span className="text-[10px] uppercase tracking-[0.2em]">Turn Back</span>
+                        <span className="text-xl leading-none">←</span>
+                        <span className="uppercase" style={{ fontSize: "0.6rem", letterSpacing: "0.2em" }}>Turn Back</span>
                       </Link>
-                    ) : <span />}
+                    )}
                   </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-3xl font-bold leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-                      {toRoman(page)}
-                    </span>
-                    <span className="text-[9px] uppercase tracking-[0.25em] opacity-40" style={{ fontFamily: "var(--font-heading)" }}>
-                      of {toRoman(totalPages)}
-                    </span>
+                  <div className="text-center">
+                    <div className="font-bold" style={{ fontFamily: FONT_H, fontSize: "2.5rem", lineHeight: 1 }}>{toRoman(page)}</div>
+                    <div className="uppercase opacity-35" style={{ fontSize: "0.55rem", letterSpacing: "0.25em", fontFamily: FONT_H }}>of {toRoman(totalPages)}</div>
                   </div>
                   <div className="flex justify-end">
-                    {page < totalPages ? (
+                    {page < totalPages && (
                       <Link
                         href={`/?page=${page + 1}`}
-                        className="flex flex-col items-end gap-1 hover:opacity-70 transition-opacity"
-                        style={{ fontFamily: "var(--font-heading)" }}
+                        className="flex flex-col items-end gap-1 opacity-70 hover:opacity-100 transition-opacity"
+                        style={{ fontFamily: FONT_H }}
                       >
-                        <span className="text-lg leading-none">→</span>
-                        <span className="text-[10px] uppercase tracking-[0.2em]">Turn Forward</span>
+                        <span className="text-xl leading-none">→</span>
+                        <span className="uppercase" style={{ fontSize: "0.6rem", letterSpacing: "0.2em" }}>Turn Forward</span>
                       </Link>
-                    ) : <span />}
+                    )}
                   </div>
                 </div>
               </div>
@@ -313,8 +394,8 @@ export default async function Home({
 
       {/* ── Footer ── */}
       <footer
-        className="mt-8 py-6 px-6 text-center text-xs tracking-widest uppercase opacity-50"
-        style={{ borderTop: "3px double rgba(58,53,48,0.35)", fontFamily: "var(--font-heading)" }}
+        className="mt-10 text-center uppercase opacity-40"
+        style={{ borderTop: BORDER_HEAVY, padding: "1.25rem 1.5rem", fontSize: "0.6rem", letterSpacing: "0.3em", fontFamily: FONT_H }}
       >
         {settings.site_name} &mdash; {settings.site_tagline}
       </footer>
