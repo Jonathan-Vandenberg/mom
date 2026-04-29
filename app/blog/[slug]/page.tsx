@@ -42,8 +42,7 @@ export async function generateMetadata({
 
   if (!post) return { title: "Not Found" };
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const canonicalUrl = `${siteUrl}/blog/${slug}`;
+  const canonicalUrl = `/blog/${slug}`;
   const description = post.meta_description || post.excerpt || undefined;
   const keywords = post.meta_keywords || undefined;
   const author = post.author_name || "Jonathan van den Berg";
@@ -162,7 +161,7 @@ export default async function BlogPostPage({
             <MarkdownRenderer content={post.content} />
             <ShareButtons
               title={post.title}
-              url={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/blog/${slug}`}
+              url={`${process.env.NEXT_PUBLIC_SITE_URL || "https://www.jonathanvandenberg.com"}/blog/${slug}`}
             />
           </div>
         </article>
