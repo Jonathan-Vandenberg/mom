@@ -124,58 +124,61 @@ export default async function BlogPostPage({
       {/* Nav — fixed, hides on scroll down */}
       <ArticleNav siteName={settings.site_name} logoUrl={settings.logo_url} userSlot={<NavUser />} />
 
-      <article className="flex-1 pt-[72px]">
-        {/* Hero — pt-[72px] clears the fixed nav */}
-        {post.cover_image && (
-          <div className="relative h-[35vh] sm:h-[45vh] md:h-[55vh] w-full overflow-hidden">
-            <Image
-              src={post.cover_image}
-              alt={post.title}
-              fill
-              sizes="100vw"
-              className="object-cover object-top"
-              priority
+      <main className="flex-1 pt-[72px]">
+        <article>
+          {/* Hero */}
+          {post.cover_image && (
+            <div className="relative h-[35vh] sm:h-[45vh] md:h-[55vh] w-full overflow-hidden">
+              <Image
+                src={post.cover_image}
+                alt={post.title}
+                fill
+                sizes="100vw"
+                className="object-cover object-top"
+                priority
+                fetchPriority="high"
+              />
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
+            <div className="pt-10 sm:pt-16 pb-8 sm:pb-12 px-4 sm:px-6 text-center border-b border-stone-100 dark:border-stone-800">
+              <p className="text-xs tracking-[0.3em] uppercase mb-4 text-stone-400 dark:text-stone-500">
+                {post.author_name && <>{post.author_name} · </>}{date}
+              </p>
+              <h1
+                className="text-2xl sm:text-4xl md:text-6xl font-light text-stone-900 dark:text-stone-100 max-w-4xl mx-auto leading-tight"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                {post.title}
+              </h1>
+              {post.excerpt && (
+                <p className="mt-4 sm:mt-6 text-base sm:text-lg text-stone-500 dark:text-stone-400 font-light max-w-2xl mx-auto leading-relaxed">
+                  {post.excerpt}
+                </p>
+              )}
+            </div>
+            <MarkdownRenderer content={post.content} />
+            <ShareButtons
+              title={post.title}
+              url={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/blog/${slug}`}
             />
           </div>
-        )}
-
-        {/* Content */}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 md:py-16">
-        <div className="pt-10 sm:pt-16 pb-8 sm:pb-12 px-4 sm:px-6 text-center border-b border-stone-100 dark:border-stone-800">
-          <p className="text-xs tracking-[0.3em] uppercase mb-4 text-stone-400 dark:text-stone-500">
-            {post.author_name && <>{post.author_name} · </>}{date}
-          </p>
-          <h1
-            className="text-2xl sm:text-4xl md:text-6xl font-light text-stone-900 dark:text-stone-100 max-w-4xl mx-auto leading-tight"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            {post.title}
-          </h1>
-          {post.excerpt && (
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-stone-500 dark:text-stone-400 font-light max-w-2xl mx-auto leading-relaxed">
-              {post.excerpt}
-            </p>
-          )}
-        </div>
-          <MarkdownRenderer content={post.content} />
-          <ShareButtons
-            title={post.title}
-            url={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/blog/${slug}`}
-          />
-        </div>
-      </article>
+        </article>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-stone-200 dark:border-stone-800 py-8 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link
             href="/"
-            className="text-sm tracking-wider uppercase text-stone-400 dark:text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+            className="text-sm tracking-wider uppercase text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
           >
             ← All Articles
           </Link>
           <span
-            className="text-sm tracking-widest uppercase font-light text-stone-400 dark:text-stone-500"
+            className="text-sm tracking-widest uppercase font-light text-stone-600 dark:text-stone-400"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {settings.site_name}

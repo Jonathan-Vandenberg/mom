@@ -14,8 +14,8 @@ export default async function NavUser({ dark = false }: { dark?: boolean }) {
         href="/login"
         className={`text-sm tracking-wider uppercase transition-colors ${
           dark
-            ? "text-white/70 hover:text-white"
-            : "text-stone-500 hover:text-stone-900"
+            ? "text-white/80 hover:text-white"
+            : "text-stone-700 hover:text-stone-900"
         }`}
       >
         Sign In

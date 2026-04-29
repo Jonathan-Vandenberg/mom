@@ -22,6 +22,7 @@ interface Message {
 
 interface AIArticleWriterProps {
   onInsert: (html: string) => void;
+  onMetaDescription?: (text: string) => void;
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -80,7 +81,13 @@ Content here...
 More content...
 \`\`\`
 
-This allows the user to easily insert it into the editor. Image placeholders will be replaced with AI-generated images.`;
+Immediately after the article block, output a meta description block:
+
+\`\`\`meta_description
+Your SEO meta description here — 150-160 characters, engaging, includes the main topic, no quotes.
+\`\`\`
+
+This meta description will be automatically filled in the SEO field. Image placeholders will be replaced with AI-generated images.`;
 }
 
 /* ── Question types ────────────────────────────────────────── */
@@ -100,7 +107,7 @@ interface QuestionFlowState {
 
 /* ── Component ─────────────────────────────────────────────── */
 
-export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
+export default function AIArticleWriter({ onInsert, onMetaDescription }: AIArticleWriterProps) {
   const [open, setOpen] = useState(false);
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [selectedModel, setSelectedModel] = useState("x-ai/grok-4.20");
@@ -391,6 +398,11 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
     return match ? match[1].trim() : null;
   };
 
+  const extractMetaDescription = (content: string): string | null => {
+    const match = content.match(/```meta_description\n([\s\S]*?)```/);
+    return match ? match[1].trim() : null;
+  };
+
   const IMAGE_PLACEHOLDER_RE = /\[(?:GENERATE_IMAGE|Image):\s*(.+?)\]/g;
 
   const countImagePlaceholders = (text: string): number => {
@@ -445,11 +457,13 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
     const article = extractArticle(content);
     if (!article) return;
 
+    const metaDesc = extractMetaDescription(content);
+    if (metaDesc) onMetaDescription?.(metaDesc);
+
     const imageCount = countImagePlaceholders(article);
     if (imageCount > 0) {
       generateImagesAndInsert(content);
     } else {
-      // No images, insert directly
       import("marked").then(({ marked }) => {
         const html = marked.parse(article, { async: false }) as string;
         onInsert(html);
@@ -461,7 +475,10 @@ export default function AIArticleWriter({ onInsert }: AIArticleWriterProps) {
   const handleInsertWithoutImages = (content: string) => {
     const article = extractArticle(content);
     if (!article) return;
-    // Strip image placeholders and insert
+
+    const metaDesc = extractMetaDescription(content);
+    if (metaDesc) onMetaDescription?.(metaDesc);
+
     const stripped = article.replace(IMAGE_PLACEHOLDER_RE, "");
     import("marked").then(({ marked }) => {
       const html = marked.parse(stripped, { async: false }) as string;

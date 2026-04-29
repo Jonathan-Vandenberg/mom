@@ -91,7 +91,7 @@ async function callAI(
   recentPosts: { title: string; slug: string }[],
   apiKey: string,
   model: string
-): Promise<{ title: string; content: string; excerpt: string; sourceUrl: string } | null> {
+): Promise<{ title: string; content: string; excerpt: string; metaDescription: string; sourceUrl: string } | null> {
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -131,7 +131,9 @@ Output your response in this EXACT format:
 
 TITLE: [Article title here]
 
-EXCERPT: [A compelling 1-2 sentence summary for SEO and social sharing. ${excerptStyle} Do NOT start with "As", "As of", or any temporal qualifier.]
+EXCERPT: [A compelling 1-2 sentence summary shown on the site. ${excerptStyle} Do NOT start with "As", "As of", or any temporal qualifier.]
+
+META_DESCRIPTION: [SEO meta description, 150-160 characters, engaging, includes the main topic. Different wording from the excerpt. No quotes.]
 
 SOURCE_URL: [The source URL from your chosen topic, or empty string if none]
 
@@ -172,6 +174,7 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
 
     const titleMatch = text.match(/TITLE:\s*(.+)/);
     const excerptMatch = text.match(/EXCERPT:\s*(.+)/);
+    const metaDescriptionMatch = text.match(/META_DESCRIPTION:\s*(.+)/);
     const sourceUrlMatch = text.match(/SOURCE_URL:\s*(.+)/);
     const articleMatch = text.match(/ARTICLE:\s*([\s\S]+)/);
 
@@ -204,6 +207,7 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
       title: cleanMarkdown(titleMatch[1]),
       content,
       excerpt: excerptMatch ? cleanMarkdown(excerptMatch[1]) : "",
+      metaDescription: metaDescriptionMatch ? cleanMarkdown(metaDescriptionMatch[1]) : "",
       sourceUrl,
     };
   } catch (err) {
@@ -617,7 +621,7 @@ export async function generateAndPublishArticle(): Promise<{
       excerpt: article.excerpt,
       cover_image: coverImage,
       author_name: "Jonathan van den Berg",
-      meta_description: article.excerpt,
+      meta_description: article.metaDescription || article.excerpt,
       meta_keywords: "",
       published: true,
       author_id: adminProfile?.id || null,

@@ -29,6 +29,7 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
   const [state, formAction, pending] = useActionState(action, null);
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverImage, setCoverImage] = useState(initialData?.cover_image ?? "");
+  const [metaDescription, setMetaDescription] = useState(initialData?.meta_description ?? "");
   const [uploading, setUploading] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const pendingNavRef = useRef<string | null>(null);
@@ -42,7 +43,7 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
     const init = initialData ?? { title: "", excerpt: "", meta_description: "", meta_keywords: "", content: "", cover_image: "" };
     if ((fd.get("title") as string ?? "") !== init.title) return true;
     if ((fd.get("excerpt") as string ?? "") !== init.excerpt) return true;
-    if ((fd.get("meta_description") as string ?? "") !== init.meta_description) return true;
+    if (metaDescription !== init.meta_description) return true;
     if ((fd.get("meta_keywords") as string ?? "") !== init.meta_keywords) return true;
     if (content !== init.content) return true;
     if (coverImage !== init.cover_image) return true;
@@ -150,6 +151,7 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
       <div>
         <AIArticleWriter
           onInsert={(html) => setContent((prev) => (prev ? prev + html : html))}
+          onMetaDescription={setMetaDescription}
         />
       </div>
 
@@ -173,7 +175,8 @@ export default function PostEditor({ action, initialData }: PostEditorProps) {
             <textarea
               name="meta_description"
               rows={2}
-              defaultValue={initialData?.meta_description ?? ""}
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
               className={inputClass}
               placeholder="SEO description (recommended 150-160 characters)"
               maxLength={320}

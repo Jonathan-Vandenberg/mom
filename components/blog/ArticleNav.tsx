@@ -49,7 +49,7 @@ export default function ArticleNav({ siteName, logoUrl, userSlot }: ArticleNavPr
         </Link>
         <Link
           href="/"
-          className="text-sm tracking-wider uppercase text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+          className="text-sm tracking-wider uppercase text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
         >
           ← Articles
         </Link>
