@@ -5,18 +5,33 @@ import { useState } from "react";
 interface ShareButtonsProps {
   title: string;
   url: string;
+  coverImage?: string;
 }
 
-export default function ShareButtons({ title, url }: ShareButtonsProps) {
+export default function ShareButtons({ title, url, coverImage }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleNativeShare() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        // user cancelled or not supported
+    if (typeof navigator === "undefined" || !navigator.share) return;
+    try {
+      // Try to include the cover image as a file if the browser supports it
+      if (coverImage && navigator.canShare) {
+        try {
+          const res = await fetch(coverImage);
+          const blob = await res.blob();
+          const ext = blob.type.includes("png") ? "png" : "jpg";
+          const file = new File([blob], `cover.${ext}`, { type: blob.type });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title, url, files: [file] });
+            return;
+          }
+        } catch {
+          // fall through to share without image
+        }
       }
+      await navigator.share({ title, url });
+    } catch {
+      // user cancelled or not supported
     }
   }
 

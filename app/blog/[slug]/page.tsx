@@ -162,6 +162,7 @@ export default async function BlogPostPage({
             <ShareButtons
               title={post.title}
               url={`${process.env.NEXT_PUBLIC_SITE_URL || "https://www.jonathanvandenberg.com"}/blog/${slug}`}
+              coverImage={post.cover_image || undefined}
             />
           </div>
         </article>
