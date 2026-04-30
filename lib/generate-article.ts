@@ -6,7 +6,7 @@ const GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=US";
 
 interface TrendingTopic {
   topic: string;
-  newsUrl: string;
+  newsUrls: string[];
 }
 
 async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
@@ -30,11 +30,11 @@ async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
       else if (plainMatch && plainMatch[1] !== "Daily Search Trends") topic = plainMatch[1];
       if (!topic) continue;
 
-      // Extract first news item URL for this topic
-      const newsUrlMatch = block.match(/<ht:news_item_url>([^<]+)<\/ht:news_item_url>/);
-      const newsUrl = newsUrlMatch ? newsUrlMatch[1].trim() : "";
+      // Extract all news item URLs for this topic
+      const newsUrlMatches = [...block.matchAll(/<ht:news_item_url>([^<]+)<\/ht:news_item_url>/g)];
+      const newsUrls = newsUrlMatches.map((m) => m[1].trim()).filter(Boolean);
 
-      results.push({ topic, newsUrl });
+      results.push({ topic, newsUrls });
     }
 
     // Fallback: if item parsing found nothing, fall back to plain title extraction
@@ -43,12 +43,12 @@ async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
       const titleRegex2 = /<title>([^<]+)<\/title>/g;
       let match: RegExpExecArray | null;
       while ((match = titleRegex.exec(xml)) !== null) {
-        results.push({ topic: match[1], newsUrl: "" });
+        results.push({ topic: match[1], newsUrls: [] });
       }
       while ((match = titleRegex2.exec(xml)) !== null) {
         const topic = match[1];
         if (topic !== "Daily Search Trends" && !results.some((r) => r.topic === topic)) {
-          results.push({ topic, newsUrl: "" });
+          results.push({ topic, newsUrls: [] });
         }
       }
     }
@@ -91,7 +91,7 @@ async function callAI(
   recentPosts: { title: string; slug: string }[],
   apiKey: string,
   model: string
-): Promise<{ title: string; content: string; excerpt: string; metaDescription: string; sourceUrl: string } | null> {
+): Promise<{ title: string; content: string; excerpt: string; metaDescription: string; sourceUrls: string[] } | null> {
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -102,7 +102,7 @@ async function callAI(
   const excerptStyle = EXCERPT_STYLES[Math.floor(Math.random() * EXCERPT_STYLES.length)];
 
   const topicList = trends
-    .map((t, i) => `${i + 1}. ${t.topic}${t.newsUrl ? ` [source: ${t.newsUrl}]` : ""}`)
+    .map((t, i) => `${i + 1}. ${t.topic}${t.newsUrls.length > 0 ? ` [sources: ${t.newsUrls.join(", ")}]` : ""}`)
     .join("\n");
 
   const internalLinksSection =
@@ -122,8 +122,8 @@ ${topicList}
 
 Your task:
 1. Pick the topic most relevant to GEOPOLITICS or ECONOMICS (international relations, conflicts, sanctions, trade, financial markets, crypto, central banking, energy politics). If none are directly relevant, find a geopolitical/economic angle on the most suitable topic.
-2. Write a comprehensive, well-researched article about it.
-3. Note the source URL of the topic you chose (the [source: ...] value next to your chosen topic, or empty string if none).
+2. Write a comprehensive, well-researched article about it. Use the provided source URLs plus any other authoritative sources you have access to when researching.
+3. List ALL source URLs you actually used or referenced when writing the article (both from the [sources: ...] list and any others you found).
 
 OPENING INSTRUCTION: ${openingStyle}
 ${internalLinksSection}
@@ -135,14 +135,21 @@ EXCERPT: [A compelling 1-2 sentence summary shown on the site. ${excerptStyle} D
 
 META_DESCRIPTION: [SEO meta description, 150-160 characters, engaging, includes the main topic. Different wording from the excerpt. No quotes.]
 
-SOURCE_URL: [The source URL from your chosen topic, or empty string if none]
+SOURCE_URLS: [Comma-separated list of all source URLs you used. Include the provided source URLs for the topic plus any other authoritative URLs you referenced. Example: https://example.com/a, https://example.com/b]
 
 ARTICLE:
 [Full article in HTML format using <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <a> tags.
 Write 1500-2500 words.
 Include an introduction, multiple sections with subheadings, and a conclusion.
-Be analytical and authoritative in tone.
-Include specific data points, names, and context where relevant.
+
+TONE AND STYLE:
+- Write like a knowledgeable friend explaining world events — clear, direct, and confident, not stiff or academic.
+- Use plain language where possible. If a technical term is necessary, briefly explain it in plain words the first time it appears.
+- Prefer short sentences over long, nested ones. Break up dense paragraphs.
+- Avoid jargon-heavy phrases like "geopolitical ramifications", "macroeconomic headwinds", "paradigm shift", or "multifaceted implications". Say what you mean plainly.
+- Include specific data points, names, and context — but frame them in terms of what they mean for real people, not just institutions.
+- The article should feel like quality journalism: professional, well-sourced, and trustworthy, but easy to read.
+
 Do NOT use markdown — use HTML tags only.
 IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, or anything that reveals this was AI-generated. Output ONLY the article HTML, nothing else after it.]`;
 
@@ -175,7 +182,7 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
     const titleMatch = text.match(/TITLE:\s*(.+)/);
     const excerptMatch = text.match(/EXCERPT:\s*(.+)/);
     const metaDescriptionMatch = text.match(/META_DESCRIPTION:\s*(.+)/);
-    const sourceUrlMatch = text.match(/SOURCE_URL:\s*(.+)/);
+    const sourceUrlsMatch = text.match(/SOURCE_URLS:\s*(.+)/);
     const articleMatch = text.match(/ARTICLE:\s*([\s\S]+)/);
 
     if (!titleMatch || !articleMatch) {
@@ -199,16 +206,19 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
       content = content.substring(0, lastClosingTag + 1);
     }
 
-    const rawSourceUrl = sourceUrlMatch ? cleanMarkdown(sourceUrlMatch[1]) : "";
-    // Validate it looks like a URL, otherwise discard
-    const sourceUrl = rawSourceUrl.startsWith("http") ? rawSourceUrl : "";
+    // Parse comma-separated source URLs, keeping only valid ones
+    const rawSourceUrls = sourceUrlsMatch ? cleanMarkdown(sourceUrlsMatch[1]) : "";
+    const sourceUrls = rawSourceUrls
+      .split(",")
+      .map((u) => u.trim())
+      .filter((u) => u.startsWith("http"));
 
     return {
       title: cleanMarkdown(titleMatch[1]),
       content,
       excerpt: excerptMatch ? cleanMarkdown(excerptMatch[1]) : "",
       metaDescription: metaDescriptionMatch ? cleanMarkdown(metaDescriptionMatch[1]) : "",
-      sourceUrl,
+      sourceUrls,
     };
   } catch (err) {
     console.error("AI generation error:", err);
@@ -216,9 +226,29 @@ IMPORTANT: Do NOT include any meta-commentary, word counts, notes, disclaimers, 
   }
 }
 
-function buildSourceAttribution(sourceUrl: string): string {
-  if (!sourceUrl) return "";
-  return `<p class="source-attribution" style="margin-top:2rem;font-size:0.875rem;color:#6b7280;">Source: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer nofollow">Trending on Google News</a></p>`;
+function getDomainLabel(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    // Capitalize first letter of each domain segment for readability
+    return hostname.split(".")[0].replace(/^./, (c) => c.toUpperCase());
+  } catch {
+    return url;
+  }
+}
+
+function buildSourceAttribution(sourceUrls: string[]): string {
+  if (sourceUrls.length === 0) return "";
+  const items = sourceUrls
+    .map(
+      (url) =>
+        `<a href="${url}" target="_blank" rel="noopener noreferrer nofollow" style="color:#57534e;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#d6d3d1;">${getDomainLabel(url)}</a>`
+    )
+    .join('<span style="margin:0 0.5rem;color:#d6d3d1;">·</span>');
+
+  return `<div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid #e7e5e4;">
+  <p style="margin:0 0 0.5rem;font-size:0.6875rem;letter-spacing:0.15em;text-transform:uppercase;color:#a8a29e;font-weight:500;">Sources</p>
+  <p style="margin:0;font-size:0.8125rem;line-height:1.6;color:#78716c;">${items}</p>
+</div>`;
 }
 
 async function generateCoverImage(
@@ -588,12 +618,12 @@ export async function generateAndPublishArticle(): Promise<{
   }
 
   console.log(`[cron] Generated article: ${article.title}`);
-  if (article.sourceUrl) {
-    console.log(`[cron] Source URL: ${article.sourceUrl}`);
+  if (article.sourceUrls.length > 0) {
+    console.log(`[cron] Source URLs (${article.sourceUrls.length}): ${article.sourceUrls.join(", ")}`);
   }
 
   // 4. Append source attribution to article content
-  const contentWithAttribution = article.content + buildSourceAttribution(article.sourceUrl);
+  const contentWithAttribution = article.content + buildSourceAttribution(article.sourceUrls);
 
   // 5. Generate cover image
   const coverImage = await generateCoverImage(
@@ -625,7 +655,7 @@ export async function generateAndPublishArticle(): Promise<{
       meta_keywords: "",
       published: true,
       author_id: adminProfile?.id || null,
-      source_url: article.sourceUrl || null,
+      source_url: article.sourceUrls[0] || null,
     })
     .select("id, slug")
     .single();
